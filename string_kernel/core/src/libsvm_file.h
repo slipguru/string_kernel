@@ -43,28 +43,28 @@
 #include "string_kernel.h"
 
 
-// template <class k_type>
-// bool write_libsvm_kernel(const std::string &file_name,
-//                          const std::vector<int> &labels,
-//                          const StringKernel<k_type> &kernel) {
-//   assert(labels.size() == kernel.size());
-//   int size = labels.size();
-//
-//   std::ofstream file;
-//   file.open(file_name.c_str());
-//   if (file.is_open()) {
-//     for (int i = 0; i < size; i++) {
-//       file << labels[i] << " 0:" << i << " ";
-//       for (int j = 0; j < size; j++)
-//         file << j + 1 << ":" << kernel.values()[i][j] << " ";
-//
-//       file << std::endl;
-//     }
-//     file.close();
-//     return true;
-//   }
-//   return false;
-// }
+template <class k_type>
+bool write_libsvm_kernel(const std::string &file_name,
+                         const std::vector<int> &labels,
+                         const StringKernel<k_type> &kernel) {
+  assert(labels.size() == kernel.size());
+  int size = labels.size();
+
+  std::ofstream file;
+  file.open(file_name.c_str());
+  if (file.is_open()) {
+    for (int i = 0; i < size; i++) {
+      file << labels[i] << " 0:" << i << " ";
+      for (int j = 0; j < size; j++)
+        file << j + 1 << ":" << kernel.values()[i][j] << " ";
+
+      file << std::endl;
+    }
+    file.close();
+    return true;
+  }
+  return false;
+}
 
 template <class k_type>
 bool write_kernel(const std::string &file_name,
@@ -74,7 +74,6 @@ bool write_kernel(const std::string &file_name,
   int size = labels.size();
 
   std::ofstream file;
-  std::cout << "OK" << std::endl;
   file.open(file_name.c_str());
   if (file.is_open()) {
     for (int i = 0; i < size; i++) {
@@ -91,6 +90,21 @@ bool write_kernel(const std::string &file_name,
   return false;
 }
 
+template <class k_type>
+bool write_kernel_cout(const std::vector<std::string> &labels,
+                       const StringKernel<k_type> &kernel) {
+    assert(labels.size() == kernel.size());
+    int size = labels.size();
+
+    for (int i = 0; i < size; i++) {
+      std::cout << labels[i] << "\t";
+      for (int j = 0; j < size; j++)
+        std::cout << kernel.values()[i][j] << "\t";
+
+      std::cout << std::endl;
+    }
+    return true;
+  }
 
 
 #endif
