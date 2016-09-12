@@ -87,6 +87,7 @@ class StringKernel {
   const double _lambda;
   DataSet *_string_data;
   k_type **_kernel;
+  std::vector<k_type> norms;
 
  private:
   k_type kernel(const DataElement &x, const DataElement &y) const;
@@ -121,11 +122,11 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
       }
     }
   }
-  // Kd now contains two matrices, that are n x m
-  // the first is composed by 1s, the other one by 0s
+  // Kd now contains two matrices, that are n+1 x m+1 (empty string included)
+  // Kd[0] is composed by 1s (follows the definition of K_0)
+  // Kd[1] is composed by 0s -> it starts to be filled
 
-
-  // Calculate Kd and Kdd
+  // start with i = kn = 1, 2, 3 ...
   for (int i = 1; i <= (_kn - 1); i++) {
     /* Set the Kd to zero for those lengths of s and t
     where s (or t) has exactly length i-1 and t (or s)
@@ -136,7 +137,12 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
     for (int j = (i - 1); j <= (y.length - 1); j++) {
       Kd[i % 2][i - 1][j] = 0;
     }
+
     for (int j = i; j <= (x.length - 1); j++) {
+      // Kdd maintains the contribution of the left and diagonal terms
+      // that is, ONLY the contribution of the left (not influenced by the
+      // upper terms) and the eventual contibution of lambda^2 in case the
+      // chars are the same
       k_type Kdd = 0;
       for (int m = i; m <= (y.length - 1); m++) {
         if (x.attributes[j - 1] != y.attributes[m - 1]) {
@@ -148,25 +154,24 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
         Kd[i % 2][j][m] = _lambda * Kd[i % 2][j - 1][m] + Kdd;
       }
     }
-  }
-
-  // DEBUG
-  for (int i = 0; i < x.length; i++) {
-      printf("%c ", x.attributes[i]);
-  } printf("\n");
-
-  for (int i = 0; i < y.length; i++) {
-      printf("%c ", y.attributes[i]);
-  } printf("\n");
-
-  for (int i = 0; i < 2; i++) {
-    printf("i = %d\n", i);
-    for (int j = 0; j < (x.length + 1); j++) {
-        for (int k = 0; k < (y.length + 1); k++) {
-            printf("%.0f ", Kd[i][j][k]);
-        }
-        printf("\n");
-    }
+    // print matrix, DEBUG
+    // for (int zzz = 0; zzz < 2; zzz++) {
+    //     printf("########### Kd[%d] ##########\n", zzz);
+    //     int _i;
+    //     for (_i = 0, printf("  e "); _i < y.length; _i++) {
+    //           printf("%c ", y.attributes[_i]);
+    //     }
+    //     printf("\n");
+    //
+    //     for (int j = 0; j < (x.length + 1); j++) {
+    //         if(j==0) printf("e ");
+    //         else printf("%c ", x.attributes[j-1]);
+    //         for (int k = 0; k < (y.length + 1); k++) {
+    //             printf("%.9f ", Kd[zzz][j][k]);
+    //         }
+    //         printf("\n");
+    //     }
+    // }
   }
 
   // Calculate K
@@ -178,6 +183,8 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
       }
     }
   }
+  // // DEBUG
+  // std::cout << "sum: " << sum << "\n";
 
   // Delete
   for (int j = 0; j < 2; j++) {
@@ -188,7 +195,6 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
   for (int i = 0; i < 2; i++) {
     delete[] Kd[i];
   }
-
   return sum;
 }
 
@@ -228,7 +234,9 @@ void StringKernel<k_type>::compute_kernel() {
 
 
   // Get values for normalization, it is computed for elements in diagonal
-  std::vector<k_type> norms(_string_data->size());
+  // std::vector<k_type> norms(_string_data->size());
+  // norms = std::vector<k_type>(_string_data->size());
+  norms.resize(_string_data->size());
   if (_normalize) {
     for (size_t i = 0; i < _string_data->size(); i++) {
       norms[i] = kernel(_string_data->elements()[i],
@@ -241,7 +249,6 @@ void StringKernel<k_type>::compute_kernel() {
   printf("Run kernel dp\n");
   run_kernel_dp(norms, _kernel);
 }
-
 
 
 #endif

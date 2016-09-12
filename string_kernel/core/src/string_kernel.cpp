@@ -122,16 +122,12 @@ static PyObject * string_kernel(PyObject *self, PyObject *args, PyObject *keywds
 // 	/* make it a string */
 // 	line = PyString_AsString( strObj );
 //
-// 	/* now do the parsing */
- 
-    // OLD
 
     // Main computations
     StringKernel<float> string_kernel(c, normalize, symbol_size, max_length, kn, lambda);
     string_kernel.set_data(dummy_data);
     string_kernel.compute_kernel();
 
-    // Save kernel to file
     if (write_kernel(kernel_file, dummy_labels, string_kernel))
       std::cout << "Kernel saved in the libsvm format to: " << kernel_file << std::endl;
     else {

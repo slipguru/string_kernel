@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   const int normalize = 1;
   const int symbol_size = 255;  // A size of an alphabet
   const int max_length = 1000;  // A maximum sequence length
-  int kn = 1;                   // A level of susbsequence matching
+  int kn = 2;                   // A level of susbsequence matching
   double lambda = .1;          // A decay factor
 
   // Prepare dummy data
@@ -97,11 +97,11 @@ int main(int argc, char **argv) {
   string_kernel.compute_kernel();
 
   write_kernel_cout(dummy_labels, string_kernel);
-  if (write_kernel(kernel_file, dummy_labels, string_kernel))
-    std::cout << "Kernel saved in the libsvm format to: " << kernel_file << std::endl;
-  else
-  {
-    std::cout << "Error: Cannot write to file: " << kernel_file << std::endl;
-    exit(1);
-  }
+  // if (write_kernel(kernel_file, dummy_labels, string_kernel))
+  //   std::cout << "Kernel saved in the libsvm format to: " << kernel_file << std::endl;
+  // else
+  // {
+  //   std::cout << "Error: Cannot write to file: " << kernel_file << std::endl;
+  //   exit(1);
+  // }
 }
