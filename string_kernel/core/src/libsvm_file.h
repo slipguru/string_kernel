@@ -41,6 +41,7 @@
 #include <iostream>
 #include <fstream>
 #include "string_kernel.h"
+#include "sum_string_kernel.h"
 
 
 template <class k_type>
@@ -106,5 +107,20 @@ bool write_kernel_cout(const std::vector<std::string> &labels,
     return true;
   }
 
+template <class k_type>
+bool write_kernel_cout(const std::vector<std::string> &labels,
+                       const SumStringKernel<k_type> &kernel) {
+    // assert(labels.size() == kernel.size());
+    int size = labels.size();
+
+    for (int i = 0; i < size; i++) {
+      std::cout << labels[i] << "\t";
+      for (int j = 0; j < size; j++)
+        std::cout << kernel.values()[i][j] << "\t";
+
+      std::cout << std::endl;
+    }
+    return true;
+  }
 
 #endif

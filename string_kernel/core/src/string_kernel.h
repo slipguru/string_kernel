@@ -46,12 +46,16 @@ template<class k_type>
 class StringKernel {
  public:
   /** Constructor, sets kernel parameters. */
-  StringKernel(const float c, const int normalize, const int symbol_size,
-               const size_t max_length, int kn, double lambda)
-      : _c(c), _normalize(normalize), _symbol_size(symbol_size),
-        _max_length(max_length), _kn(kn), _lambda(lambda),
-        _string_data(0), _kernel(0)
-        {}
+  StringKernel() {}
+  StringKernel(float c, int normalize, int symbol_size,
+               size_t max_length, int kn, double lambda)
+        {
+            _c = c; _normalize = normalize;
+            _symbol_size = symbol_size;
+            _max_length = max_length;
+            _kn = kn; _lambda = lambda;
+            _string_data = 0; _kernel = 0;
+        }
 
   ~StringKernel() {
     for (size_t i = 0; i < _string_data->size(); i++)
@@ -65,6 +69,7 @@ class StringKernel {
 
   /** Calculate the kernel. */
   void compute_kernel();
+  void compute_norms();
 
   /** Return pointer to kernel matrix. */
   k_type **values() const {
@@ -78,13 +83,13 @@ class StringKernel {
     return _string_data->size();
   }
 
- protected:
-  const float _c;
-  const int _normalize;
-  const int _symbol_size;
-  const size_t _max_length;
-  const int _kn;
-  const double _lambda;
+ // protected:
+  float _c;
+  int _normalize;
+  int _symbol_size;
+  size_t _max_length;
+  int _kn;
+  double _lambda;
   DataSet *_string_data;
   k_type **_kernel;
   std::vector<k_type> norms;
@@ -246,9 +251,14 @@ void StringKernel<k_type>::compute_kernel() {
   }
 
   // Compute kernel using dynamic programming
-  printf("Run kernel dp\n");
   run_kernel_dp(norms, _kernel);
 }
 
-
+template<class k_type>
+void StringKernel<k_type>::compute_norms() {
+    for (size_t i = 0; i < _string_data->size(); i++) {
+      norms[i] = kernel(_string_data->elements()[i],
+                        _string_data->elements()[i]);
+    }
+}
 #endif
