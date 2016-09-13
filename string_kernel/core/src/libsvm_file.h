@@ -92,6 +92,33 @@ bool write_kernel(const std::string &file_name,
 }
 
 template <class k_type>
+bool write_kernel(const std::string &file_name,
+                  const std::vector<std::string> &labels,
+                  const SumStringKernel<k_type> &kernel) {
+  assert(labels.size() == kernel.size());
+  size_t size = labels.size();
+
+  std::ofstream file;
+  file.open(file_name.c_str());
+  if (file.is_open()) {
+      for (size_t i = 0; i < size; i++) {
+          file << "," << labels[i];
+      }
+      file << std::endl;
+      for (size_t i = 0; i < size; i++) {
+          file << labels[i];
+          for (size_t j = 0; j < size; j++) {
+              file << "," << kernel.values()[i][j];
+          }
+          file << std::endl;
+      }
+      file.close();
+      return true;
+  }
+  return false;
+}
+
+template <class k_type>
 bool write_kernel_cout(const std::vector<std::string> &labels,
                        const StringKernel<k_type> &kernel) {
     assert(labels.size() == kernel.size());

@@ -12,30 +12,29 @@ template<class k_type>
 class SumStringKernel {
  public:
   /** Constructor, sets kernel parameters. */
-  SumStringKernel(
-               int min_kn, int max_kn,
-               const float c, const int normalize, const int symbol_size,
-               const size_t max_length, double lambda)
-      : _min_kn(min_kn), _max_kn(max_kn), _normalize(normalize), _symbol_size(symbol_size), _max_length(max_length)
-        {
+  SumStringKernel(int min_kn, int max_kn,
+                  const float c, const int normalize, const int symbol_size,
+                  const size_t max_length, double lambda)
+      : _min_kn(min_kn), _max_kn(max_kn), _normalize(normalize),
+        _symbol_size(symbol_size), _max_length(max_length) {
             _size = max_kn - min_kn + 1;
             _string_kernels = new StringKernel<k_type> *[_size];
             for (size_t i = 0; i < _size; i++) {
                 // force normalize false in the StringKernel
-                // _string_kernels.push_back(new StringKernel<k_type>(c, 0, symbol_size, max_length, min_kn + i, lambda));
                 _string_kernels[i] = new StringKernel<k_type>(c, 0, symbol_size, max_length, min_kn + i, lambda);
             }
         }
 
   ~SumStringKernel() {
-    for (size_t i = 0; i < _string_data->size(); i++)
-      delete[] _kernel[i];
-    delete [] _kernel;
-    for (size_t i = 0; i < _size; i++)
-      delete _string_kernels[i];
-    delete [] _string_kernels;
-    delete _string_data;
-    delete _norms;
+        for (size_t i = 0; i < _string_data->size(); i++)
+            delete[] _kernel[i];
+        delete [] _kernel;
+        for (size_t i = 0; i < _size; i++)
+            delete _string_kernels[i];
+        delete [] _string_kernels;
+
+        delete _string_data;
+        delete _norms;
   }
 
   /** Set the dataset to be used by the kernel. */
@@ -93,8 +92,6 @@ void SumStringKernel<k_type>::compute_kernel() {
     _kernel[i] = new k_type[_string_data->size()];
 
   // Get values for normalization, it is computed for elements in diagonal
-  // std::vector<k_type> norms(_string_data->size());
-  // norms = std::vector<k_type>(_string_data->size());
   _norms = new k_type[_string_data->size()];
   for(size_t i = 0; i < _string_data->size(); i++) {
       _norms[i] = 0;

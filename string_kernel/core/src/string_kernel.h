@@ -46,7 +46,6 @@ template<class k_type>
 class StringKernel {
  public:
   /** Constructor, sets kernel parameters. */
-  StringKernel() {}
   StringKernel(float c, int normalize, int symbol_size,
                size_t max_length, int kn, double lambda)
         {
