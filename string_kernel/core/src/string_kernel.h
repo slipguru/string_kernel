@@ -91,7 +91,7 @@ class StringKernel {
   int _kn;
   double _lambda;
   DataSet *_string_data;
-  k_type **_kernel;
+  k_type **_kernel;  // TODO make it a mono dimensional array
   std::vector<k_type> norms;
 
  private:
