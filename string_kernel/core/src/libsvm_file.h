@@ -108,7 +108,7 @@ bool write_kernel(const std::string &file_name,
       for (size_t i = 0; i < size; i++) {
           file << labels[i];
           for (size_t j = 0; j < size; j++) {
-              file << "," << kernel.values()[i][j];
+              file << "," << kernel.values()[i*size+j];
           }
           file << std::endl;
       }
@@ -143,7 +143,7 @@ bool write_kernel_cout(const std::vector<std::string> &labels,
     for (int i = 0; i < size; i++) {
       std::cout << labels[i] << "\t";
       for (int j = 0; j < size; j++)
-        std::cout << kernel.values()[i][j] << "\t";
+        std::cout << kernel.values()[i*size+j] << "\t";
 
       std::cout << std::endl;
     }

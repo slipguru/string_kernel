@@ -7,8 +7,11 @@
 #include "string_kernel.h"
 #include "sum_string_kernel.h"
 #include <sstream>
+#include <numpy/arrayobject.h>
 
-static PyObject * sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
+// static PyArrayObject *
+static PyObject *
+sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     // int cols;           /* number of cols to parse, from the left */
     // int numLines;       /* how many lines we passed for parsing */
     // char * tok;         /* delimiter tokens for strtok */
@@ -89,8 +92,38 @@ static PyObject * sum_string_kernel(PyObject *self, PyObject *args, PyObject *ke
         return NULL;
     }
 
-    PyObject * ret = Py_BuildValue("s", "OK");
-    return ret;
+    // build the numpy matrix to pass back to the Python code starting from
+    // string_kernel -> values()
+    // int dims[2];
+    // dims[0] = dims[1] = numLines;
+    // PyArrayObject * py_arr = (PyArrayObject*) PyArray_FromDims(2, dims, 'd');
+    // if(!py_arr) return 0;
+
+    // TODO avoid copying data?
+    float * data = (float*) malloc(numLines*numLines*sizeof(float));
+    if (!data) {
+        PyErr_SetString(PyExc_MemoryError, "out of memory");
+        return NULL;
+    }
+    for (int i = 0; i < numLines; i++) {
+        for (int j = 0; j < numLines; j++) {
+            data[i*numLines+j] = string_kernel.values()[i*numLines+j];
+        }
+    }
+
+    // std::cerr << "dims\n" << dims[0] << dims[1];
+    // PyObject * py_arr = PyArray_FromDimsAndData(2, dims, PyArray_FLOAT, \
+    //                                             (char*) data);
+    npy_intp* size = (npy_intp*)malloc(sizeof(npy_intp)*2);
+    size[0] = size[1] = numLines;
+    PyObject * py_arr = PyArray_SimpleNewFromData(2, size, NPY_FLOAT, data);
+    return py_arr;
+
+    // return PyArray_Return(py_arr);
+
+    // return PyArray_Return(PyArray_FromDimsAndData(nd, dimensions, PyArray_DOUBLE, string_kernel->values()));
+    // PyObject * ret = Py_BuildValue("s", "OK");
+    // return ret;
 }
 
 static PyMethodDef StringKernelMethods[] = {
@@ -101,6 +134,7 @@ static PyMethodDef StringKernelMethods[] = {
 
 PyMODINIT_FUNC initsum_string_kernel(void) {
     (void) Py_InitModule("sum_string_kernel", StringKernelMethods);
+    import_array();  // required to use PyArray_SimpleNewFromData
 }
 
 int main(int argc, char *argv[]) {
