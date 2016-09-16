@@ -88,10 +88,10 @@ def read_pdb(pdb_file, dialect='excel-tab'):
         sys.exit('ERROR: File %s cannot be read' % pdb_file)
     except Exception as e:
         sys.exit('ERROR: {}'.format(e))
-    return {k: v for k, v in zip(loops, map(shorten, seqs))}#, light, heavy
+    return {k: v for k, v in zip(loops, map(shorten, seqs))}  # , light, heavy
+
 
 def pdb_to_df(path):
-
     loops = ['LCDR1', 'LCDR2', 'LCDR3', 'HCDR1', 'HCDR2', 'HCDR3']
     df = pd.DataFrame(columns=loops)
 

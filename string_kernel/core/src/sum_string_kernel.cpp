@@ -62,6 +62,7 @@ static PyObject * sum_string_kernel(PyObject *self, PyObject *args, PyObject *ke
         	line = PyString_AsString(strObj);
             label = std::string(line);
         } else {
+            // convert i into a string
             ss << i;
             label = ss.str();
         }

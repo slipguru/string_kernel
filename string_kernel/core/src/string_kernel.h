@@ -41,6 +41,7 @@
 #include <cassert>
 #include <cmath>
 #include "data_set.h"
+#include "models.h"
 
 template<class k_type>
 class StringKernel {
@@ -109,8 +110,8 @@ void StringKernel<k_type>::set_data(const std::vector<std::string> &strings) {
 
 template<class k_type>
 k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) const {
+  // Allocate Kd
   k_type **Kd[2];
-
   for (int i = 0; i < 2; i++) {
     Kd[i] = new k_type *[x.length + 1];
     for (int j = 0; j < x.length + 1; j++) {
@@ -118,7 +119,7 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
     }
   }
 
-  // Dynamic programming
+  // Initialise Kd
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < (x.length + 1); j++) {
       for (int k = 0; k < (y.length + 1); k++) {
@@ -182,15 +183,16 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
   k_type sum = 0;
   for (int i = _kn; i <= x.length; i++) {
     for (int j = _kn; j <= y.length; j++) {
-      if (x.attributes[((i)) - 1] == y.attributes[((j)) - 1]) {
-        sum += _lambda * _lambda * Kd[(_kn - 1) % 2][i - 1][j - 1];
-      }
+    //   if (x.attributes[((i)) - 1] == y.attributes[((j)) - 1]) {
+    //     sum += _lambda * _lambda * Kd[(_kn - 1) % 2][i - 1][j - 1];
+    //   }
+
+        // soft matching, regulated from models.h, amminoacidic model
+        sum += _lambda * _lambda * aa_model[(x.attributes[i-1]-65)*26+y.attributes[j-1]-65] * Kd[(_kn - 1) % 2][i - 1][j - 1];
     }
   }
-  // // DEBUG
-  // std::cout << "sum: " << sum << "\n";
 
-  // Delete
+  // Delete Kd
   for (int j = 0; j < 2; j++) {
     for (int i = 0; i < x.length + 1; i++) {
       delete[] Kd[j][i];

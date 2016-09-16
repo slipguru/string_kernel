@@ -1,24 +1,30 @@
 """."""
+from __future__ import print_function
 import pandas as pd
 from string_kernel import io
 from string_kernel.core.src import string_kernel, sum_string_kernel
 
 df = io.pdb_to_df('/home/fede/Downloads/data_CLL_2015/data_CLL_2015/models_rf (copy)')
 
-df_tmp = pd.read_csv("/home/fede/Dropbox/projects/Franco_Fabio_Marcat/conversioni_ID/tab_final_merged_newid_mutation.csv", usecols=("Folder PAOLO", "new_id_tm"))
+df_tmp = pd.read_csv("/home/fede/Dropbox/projects/Franco_Fabio_Marcat/conversioni_ID/tab_final_merged_newid_mutation.csv")
 
 new_ids = []
 folders = map(lambda x: x, list(df.index))
 for i in folders:
-    row = df_tmp[df_tmp['Folder PAOLO'] == i]
-    try:
-        new_ids.append(list(row['new_id_tm'])[0])
-    except:
-        print("no correspondece for", i)
-        new_ids.append(i[:-4] + '___')
+    row = list(df_tmp[df_tmp['Folder PAOLO'] == i]['new_id_tm']) or \
+        list(df_tmp[df_tmp['ID TM matrice'] == i[:-4]]['new_id_tm']) or \
+        list(df_tmp[df_tmp['key'] == i[:-4]]['new_id_tm']) or \
+        (print("no correndence for ", i) or [i[:-4] + '___'])
+    new_ids.append(row[0])
+    if row[0][:4] == 'G034':
+        print(i, row[0])
 
+min_kn = 1
+max_kn = 5
+lamda = .75
 for i in df.columns:
     sum_string_kernel.sum_string_kernel(
-        list(df[i]), filename='{}_kn1-3_l0.5.csv'.format(i), min_kn=1, max_kn=3,
-        lamda=0.5, labels=new_ids
+        list(df[i]),
+        filename='{}_kn{}-{}_l{}.csv'.format(i, min_kn, max_kn, lamda),
+        min_kn=min_kn, max_kn=max_kn, lamda=lamda, labels=new_ids
     )
