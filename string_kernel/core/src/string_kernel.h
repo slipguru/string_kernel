@@ -50,24 +50,26 @@ class StringKernel {
   StringKernel(float c, int normalize, int symbol_size,
                size_t max_length, int kn, double lambda)
         {
-            _c = c; _normalize = normalize;
+            _c = c;
+            _normalize = normalize;
             _symbol_size = symbol_size;
             _max_length = max_length;
-            _kn = kn; _lambda = lambda;
-            _string_data = 0; _kernel = 0;
+            _kn = kn;
+            _lambda = lambda;
+            _string_data = 0;
+            _kernel = 0;
         }
 
   ~StringKernel() {
-    for (size_t i = 0; i < _string_data->size(); i++)
-      delete[] _kernel[i];
     delete [] _kernel;
+    delete [] norms;
     delete _string_data;
   }
 
   /** Set the dataset to be used by the kernel. */
   void set_data(const std::vector<std::string> &strings);
 
-  /** Calculate the kernel. */
+  /** Calculate the kernel and the norms. */
   void compute_kernel();
   void compute_norms();
 
@@ -91,12 +93,11 @@ class StringKernel {
   int _kn;
   double _lambda;
   DataSet *_string_data;
-  k_type **_kernel;  // TODO make it a mono dimensional array
-  std::vector<k_type> norms;
+  k_type *_kernel;
+  k_type * norms;
 
  private:
   k_type kernel(const DataElement &x, const DataElement &y) const;
-  void run_kernel_dp(const std::vector<k_type> &norms, k_type **K) const;
 };
 
 
@@ -110,53 +111,55 @@ void StringKernel<k_type>::set_data(const std::vector<std::string> &strings) {
 
 template<class k_type>
 k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) const {
-  // Allocate Kd
-  k_type **Kd[2];
-  for (int i = 0; i < 2; i++) {
-    Kd[i] = new k_type *[x.length + 1];
-    for (int j = 0; j < x.length + 1; j++) {
-      Kd[i][j] = new k_type[y.length + 1];
-    }
-  }
+    size_t i, j, k;
+    k_type **Kd[2]; // TODO make Kd two matrices mono dimensional
 
-  // Initialise Kd
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < (x.length + 1); j++) {
-      for (int k = 0; k < (y.length + 1); k++) {
-        Kd[i][j][k] = (i + 1) % 2;
+    // Allocate Kd
+    for (i = 0; i < 2; i++) {
+      Kd[i] = new k_type *[x.length + 1];
+      for (j = 0; j < x.length + 1; j++) {
+          Kd[i][j] = new k_type[y.length + 1];
       }
     }
+
+  // Initialise Kd
+  for (i = 0; i < 2; i++) {
+      for (j = 0; j < (x.length + 1); j++) {
+          for (k = 0; k < (y.length + 1); k++) {
+              Kd[i][j][k] = (i + 1) % 2;
+          }
+      }
   }
   // Kd now contains two matrices, that are n+1 x m+1 (empty string included)
   // Kd[0] is composed by 1s (follows the definition of K_0)
   // Kd[1] is composed by 0s -> it starts to be filled
 
   // start with i = kn = 1, 2, 3 ...
-  for (int i = 1; i <= (_kn - 1); i++) {
+  for (i = 1; i <= (_kn - 1); i++) {
     /* Set the Kd to zero for those lengths of s and t
     where s (or t) has exactly length i-1 and t (or s)
     has length >= i-1. L-shaped upside down matrix */
-    for (int j = (i - 1); j <= (x.length - 1); j++) {
+    for (j = (i - 1); j <= (x.length - 1); j++) {
       Kd[i % 2][j][i - 1] = 0;
     }
-    for (int j = (i - 1); j <= (y.length - 1); j++) {
+    for (j = (i - 1); j <= (y.length - 1); j++) {
       Kd[i % 2][i - 1][j] = 0;
     }
 
-    for (int j = i; j <= (x.length - 1); j++) {
+    for (j = i; j <= (x.length - 1); j++) {
       // Kdd maintains the contribution of the left and diagonal terms
       // that is, ONLY the contribution of the left (not influenced by the
       // upper terms) and the eventual contibution of lambda^2 in case the
       // chars are the same
       k_type Kdd = 0;
-      for (int m = i; m <= (y.length - 1); m++) {
-        if (x.attributes[j - 1] != y.attributes[m - 1]) {
+      for (k = i; k <= (y.length - 1); k++) {
+        if (x.attributes[j - 1] != y.attributes[k - 1]) {
           // ((.))-1 is because indices start with 0 (not with 1)
           Kdd = _lambda * Kdd;
         } else {
-          Kdd = _lambda * (Kdd + (_lambda * Kd[(i + 1) % 2][j - 1][m - 1]));
+          Kdd = _lambda * (Kdd + (_lambda * Kd[(i + 1) % 2][j - 1][k - 1]));
         }
-        Kd[i % 2][j][m] = _lambda * Kd[i % 2][j - 1][m] + Kdd;
+        Kd[i % 2][j][k] = _lambda * Kd[i % 2][j - 1][k] + Kdd;
       }
     }
     // print matrix, DEBUG
@@ -181,46 +184,29 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
 
   // Calculate K
   k_type sum = 0;
-  for (int i = _kn; i <= x.length; i++) {
-    for (int j = _kn; j <= y.length; j++) {
-    //   if (x.attributes[((i)) - 1] == y.attributes[((j)) - 1]) {
-    //     sum += _lambda * _lambda * Kd[(_kn - 1) % 2][i - 1][j - 1];
-    //   }
+  for (i = _kn; i <= x.length; i++) {
+    for (j = _kn; j <= y.length; j++) {
+        // hard matching
+        // if (x.attributes[((i)) - 1] == y.attributes[((j)) - 1]) {
+        //     sum += _lambda * _lambda * Kd[(_kn - 1) % 2][i - 1][j - 1];
+        // }
 
         // soft matching, regulated from models.h, amminoacidic model
-        sum += _lambda * _lambda * aa_model[(x.attributes[i-1]-65)*26+y.attributes[j-1]-65] * Kd[(_kn - 1) % 2][i - 1][j - 1];
+        sum += _lambda * _lambda * aa_model[(x.attributes[i-1]-'A')*26 + \
+               y.attributes[j-1]-'A'] * Kd[(_kn - 1) % 2][i - 1][j - 1];
     }
   }
 
   // Delete Kd
-  for (int j = 0; j < 2; j++) {
-    for (int i = 0; i < x.length + 1; i++) {
-      delete[] Kd[j][i];
-    }
+  for (i = 0; i < 2; i++) {
+      for (j = 0; j < x.length + 1; j++) {
+          delete[] Kd[i][j];
+      }
   }
-  for (int i = 0; i < 2; i++) {
-    delete[] Kd[i];
+  for (i = 0; i < 2; i++) {
+      delete[] Kd[i];
   }
   return sum;
-}
-
-template <class k_type>
-void StringKernel<k_type>::run_kernel_dp(const std::vector<k_type> &norms,
-                                         k_type **K) const {
-  assert(_string_data);
-
-  for (size_t i = 0; i < _string_data->size(); i++) {
-    for (size_t j = 0; j < _string_data->size(); j++) {
-      if (K[j][i] == -1) {
-        K[j][i] = kernel(_string_data->elements()[j], _string_data->elements()[i]);
-
-        if (_normalize)
-          K[j][i] /= sqrt(norms[i] * norms[j]);
-
-        K[i][j] = K[j][i];
-      }
-    }
-  }
 }
 
 
@@ -228,35 +214,38 @@ template<class k_type>
 void StringKernel<k_type>::compute_kernel() {
   assert(_string_data);
 
-  // Initialize kernel
-  _kernel = new k_type *[_string_data->size()];
-  for (size_t i = 0; i < _string_data->size(); i++)
-    _kernel[i] = new k_type[_string_data->size()];
+  size_t i, j;
+  size_t kernel_dim = _string_data->size();
 
-  // Start with all K filled with -1, then only calculate kernels as needed
-  for (size_t i = 0; i < _string_data->size(); i++)
-    for (size_t j = 0; j < _string_data->size(); j++)
-      _kernel[i][j] = -1;
-
-
-  // Get values for normalization, it is computed for elements in diagonal
-  // std::vector<k_type> norms(_string_data->size());
-  // norms = std::vector<k_type>(_string_data->size());
-  norms.resize(_string_data->size());
+  // if computing normalised kernel, then compute norms
   if (_normalize) {
-    for (size_t i = 0; i < _string_data->size(); i++) {
-      norms[i] = kernel(_string_data->elements()[i],
-                        _string_data->elements()[i]);
-      _kernel[i][i] = 1;
-    }
+      compute_norms();
   }
 
   // Compute kernel using dynamic programming
-  run_kernel_dp(norms, _kernel);
+  _kernel = new k_type [kernel_dim * kernel_dim];
+  for (i = 0; i < kernel_dim; i++) {
+      if(_normalize) {
+          _kernel[i*kernel_dim+i] = 1;
+          j = i + 1;
+      } else {
+          j = i;
+      }
+    for (; j < kernel_dim; j++) {
+        _kernel[i*kernel_dim+j] = kernel(_string_data->elements()[i],
+                                         _string_data->elements()[j]);
+        if (_normalize) {
+            _kernel[i*kernel_dim+j] /= sqrt(norms[i] * norms[j]);
+        }
+        _kernel[j*kernel_dim+i] = _kernel[i*kernel_dim+j];
+    }
+  }
 }
 
 template<class k_type>
 void StringKernel<k_type>::compute_norms() {
+    // Get values for normalization, it is computed for elements in diagonal
+    norms = new k_type [_string_data->size()];
     for (size_t i = 0; i < _string_data->size(); i++) {
       norms[i] = kernel(_string_data->elements()[i],
                         _string_data->elements()[i]);

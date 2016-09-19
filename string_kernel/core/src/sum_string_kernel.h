@@ -86,31 +86,39 @@ void SumStringKernel<k_type>::set_data(const std::vector<std::string> &strings) 
 template<class k_type>
 void SumStringKernel<k_type>::compute_kernel() {
   assert(_string_data);
+
+  size_t i, j, k;
   size_t kernel_dim = _string_data->size();
 
-  _kernel = new k_type [kernel_dim*kernel_dim];
-
   // Get values for normalization, it is computed for elements in diagonal
-  _norms = new k_type[kernel_dim];
-  for(size_t i = 0; i < kernel_dim; i++) {
-      _norms[i] = 0;
+  if(_normalize) {
+      _norms = new k_type[kernel_dim];
+      for(i = 0; i < kernel_dim; i++) {
+          _norms[i] = 0;
+      }
   }
-  for(size_t i = 0; i < _num_subseq_length; i++) {
+  for(i = 0; i < _num_subseq_length; i++) {
       _string_kernels[i]->compute_kernel();
       if(_normalize) {
           _string_kernels[i]->compute_norms();
-          for (size_t j = 0; j < kernel_dim; j++) {
+          for (j = 0; j < kernel_dim; j++) {
               _norms[j] += _string_kernels[i]->norms[j];
           }
       }
   }
 
-  for (size_t i = 0; i < _string_data->size(); i++) {
-      if(_normalize) _kernel[i*kernel_dim+i] = 1;
-      for (size_t j = _normalize ? i + 1 : i; j < _string_data->size(); j++) {
+  _kernel = new k_type [kernel_dim*kernel_dim];
+  for (i = 0; i < kernel_dim; i++) {
+      if(_normalize) {
+          _kernel[i*kernel_dim+i] = 1;
+          j = i + 1;
+      } else {
+          j = i;
+      }
+      for (; j < kernel_dim; j++) {
           _kernel[i*kernel_dim+j] = 0;
-          for(size_t k = 0; k < _num_subseq_length; k++) {
-              _kernel[i*kernel_dim+j] += _string_kernels[k]->_kernel[i][j];
+          for(k = 0; k < _num_subseq_length; k++) {
+              _kernel[i*kernel_dim+j] += _string_kernels[k]->_kernel[i*kernel_dim+j];
           }
           if (_normalize) {
               _kernel[i*kernel_dim+j] /= sqrt(_norms[i] * _norms[j]);
