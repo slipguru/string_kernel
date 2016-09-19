@@ -7,13 +7,15 @@
 #include "string_kernel.h"
 #include "sum_string_kernel.h"
 #include <sstream>
+
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
 // static PyArrayObject *
 static PyObject *
 sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     // int cols;           /* number of cols to parse, from the left */
-    // int numLines;       /* how many lines we passed for parsing */
+    // int list_size;       /* how many lines we passed for parsing */
     // char * tok;         /* delimiter tokens for strtok */
     // char * token;       /* token parsed by strtok */
 
@@ -30,7 +32,7 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     std::vector<std::string> vector_data;
     std::vector<std::string> vector_labels;
 
-    int numLines;       /* how many lines we passed for parsing */
+    Py_ssize_t list_size;      /* how many lines we passed for parsing */
     char * line;        /* pointer to the line as a string */
 
     PyObject * listObj; /* the list of strings */
@@ -48,13 +50,13 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
         return NULL;
 
     /* get the number of lines passed */
-    numLines = PyList_Size(listObj);
-    if (numLines < 0) return NULL; /* Not a list */
+    list_size = PyList_Size(listObj);
+    if (list_size < 0) return NULL; /* Not a list */
 
     std::string kernel_file(filename);
     std::string label;
     std::stringstream ss;
-    for (int i = 0; i < numLines; i++){
+    for (Py_ssize_t i = 0; i < list_size; i++){
     	/* grab the string object from the next element of the list */
     	strObj = PyList_GetItem(listObj, i); /* Can't fail */
     	line = PyString_AsString( strObj );  /* make it a string */
@@ -92,36 +94,24 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
         return NULL;
     }
 
-    // build the numpy matrix to pass back to the Python code starting from
-    // string_kernel -> values()
-    // int dims[2];
-    // dims[0] = dims[1] = numLines;
-    // PyArrayObject * py_arr = (PyArrayObject*) PyArray_FromDims(2, dims, 'd');
-    // if(!py_arr) return 0;
 
+    // build the numpy matrix to pass back to the Python code
+    // need to copy data to prevent the deleting in strin kernel class
     // TODO avoid copying data?
-    float * data = (float*) malloc(numLines*numLines*sizeof(float));
+    float * data = (float*) malloc(list_size*list_size*sizeof(float));
     if (!data) {
         PyErr_SetString(PyExc_MemoryError, "out of memory");
         return NULL;
     }
-    for (int i = 0; i < numLines; i++) {
-        for (int j = 0; j < numLines; j++) {
-            data[i*numLines+j] = string_kernel.values()[i*numLines+j];
-        }
-    }
+    string_kernel.copy_kernel(data);
 
-    // std::cerr << "dims\n" << dims[0] << dims[1];
-    // PyObject * py_arr = PyArray_FromDimsAndData(2, dims, PyArray_FLOAT, \
-    //                                             (char*) data);
     npy_intp* size = (npy_intp*)malloc(sizeof(npy_intp)*2);
-    size[0] = size[1] = numLines;
+    size[0] = size[1] = list_size;
     PyObject * py_arr = PyArray_SimpleNewFromData(2, size, NPY_FLOAT, data);
     return py_arr;
 
+    // PyObject * py_arr = PyArray_FromDimsAndData(2, dims, PyArray_FLOAT, (char*) data);
     // return PyArray_Return(py_arr);
-
-    // return PyArray_Return(PyArray_FromDimsAndData(nd, dimensions, PyArray_DOUBLE, string_kernel->values()));
     // PyObject * ret = Py_BuildValue("s", "OK");
     // return ret;
 }

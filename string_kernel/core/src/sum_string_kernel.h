@@ -26,15 +26,14 @@ class SumStringKernel {
         }
 
   ~SumStringKernel() {
-        // for (size_t i = 0; i < _string_data->size(); i++)
-        //     delete[] _kernel[i];
         delete [] _kernel;
+        delete [] _norms;
+
         for (size_t i = 0; i < _num_subseq_length; i++)
             delete _string_kernels[i];
         delete [] _string_kernels;
 
         delete _string_data;
-        delete _norms;
   }
 
   /** Set the dataset to be used by the kernel. */
@@ -42,9 +41,10 @@ class SumStringKernel {
 
   /** Calculate the kernel. */
   void compute_kernel();
+  void copy_kernel(k_type * copy);
 
   /** Return pointer to kernel matrix. */
-  k_type *values() const {
+  k_type * values() const {
     assert(_kernel);
     return _kernel;
   }
@@ -82,6 +82,13 @@ void SumStringKernel<k_type>::set_data(const std::vector<std::string> &strings) 
   }
 }
 
+template<class k_type>
+void SumStringKernel<k_type>::copy_kernel(k_type * copy) {
+    size_t kernel_dim_2 = _string_data->size() * _string_data->size();
+    for (size_t i = 0; i < kernel_dim_2; i++) {
+        copy[i] = _kernel[i];
+    }
+}
 
 template<class k_type>
 void SumStringKernel<k_type>::compute_kernel() {
