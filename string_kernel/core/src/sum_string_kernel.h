@@ -13,7 +13,7 @@ class SumStringKernel {
  public:
   /** Constructor, sets kernel parameters. */
   SumStringKernel(int min_kn, int max_kn,
-                  const float c, const int normalize, const int symbol_size,
+                  const int normalize, const int symbol_size,
                   const size_t max_length, double lambda)
       : _min_kn(min_kn), _max_kn(max_kn), _normalize(normalize),
         _symbol_size(symbol_size), _max_length(max_length) {
@@ -21,7 +21,7 @@ class SumStringKernel {
             _string_kernels = new StringKernel<k_type> *[_num_subseq_length];
             for (size_t i = 0; i < _num_subseq_length; i++) {
                 // force normalize false in the StringKernel
-                _string_kernels[i] = new StringKernel<k_type>(c, 0, symbol_size, max_length, min_kn + i, lambda);
+                _string_kernels[i] = new StringKernel<k_type>(0, symbol_size, max_length, min_kn + i, lambda);
             }
         }
 
@@ -78,7 +78,8 @@ void SumStringKernel<k_type>::set_data(const std::vector<std::string> &strings) 
   _string_data->load_strings(strings);
 
   for (size_t i = 0; i < _num_subseq_length; i++) {
-      _string_kernels[i]->set_data(strings);
+    //   _string_kernels[i]->set_data(strings);
+      _string_kernels[i]->set_data(_string_data); //avoid copying
   }
 }
 
