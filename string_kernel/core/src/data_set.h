@@ -43,7 +43,7 @@
 
 struct DataElement {
   size_t length;
-  int *attributes;
+  int * attributes;
 
   DataElement() : length(0), attributes(0) {}
 
@@ -79,7 +79,9 @@ class DataSet {
       for (size_t j = 0; j < str_len; j++) {
         char temp = *(strings[i].substr(j, 1).c_str());
         assert(static_cast<int>(temp) < _symbol_size);
-        _elements[i].attributes[j] = static_cast<int>(temp);
+
+        // work with uppercase letters
+        _elements[i].attributes[j] = static_cast<int>(toupper(temp));
       }
     }
   }
@@ -88,7 +90,7 @@ class DataSet {
     delete [] _elements;
   }
 
-  const DataElement *elements() const {
+  const DataElement * elements() const {
     return _elements;
   }
 
