@@ -47,10 +47,9 @@ template<class k_type>
 class StringKernel {
  public:
   /** Constructor, sets kernel parameters. */
-  StringKernel(float c, int normalize, int symbol_size,
+  StringKernel(int normalize, int symbol_size,
                size_t max_length, int kn, double lambda)
         {
-            _c = c;
             _normalize = normalize;
             _symbol_size = symbol_size;
             _max_length = max_length;
@@ -63,11 +62,14 @@ class StringKernel {
   ~StringKernel() {
     delete [] _kernel;
     delete [] norms;
-    delete _string_data;
+    if(_private_dataset) {
+        delete _string_data;
+    }
   }
 
   /** Set the dataset to be used by the kernel. */
   void set_data(const std::vector<std::string> &strings);
+  void set_data(DataSet * dataset);
 
   /** Calculate the kernel and the norms. */
   void compute_kernel();
@@ -86,7 +88,6 @@ class StringKernel {
   }
 
  // protected:
-  float _c;
   int _normalize;
   int _symbol_size;
   size_t _max_length;
@@ -98,6 +99,7 @@ class StringKernel {
 
  private:
   k_type kernel(const DataElement &x, const DataElement &y) const;
+  int _private_dataset;
 };
 
 
@@ -106,6 +108,15 @@ void StringKernel<k_type>::set_data(const std::vector<std::string> &strings) {
   assert(strings.size() > 0);
   _string_data = new DataSet(_max_length, _symbol_size);
   _string_data->load_strings(strings);
+
+  _private_dataset = 1;
+}
+
+
+template<class k_type>
+void StringKernel<k_type>::set_data(DataSet * dataset) {
+  _string_data = dataset; // copy the pointer, to avoid copying the same data
+  _private_dataset = 0;
 }
 
 

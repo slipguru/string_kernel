@@ -59,7 +59,7 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     for (Py_ssize_t i = 0; i < list_size; i++){
     	/* grab the string object from the next element of the list */
     	strObj = PyList_GetItem(listObj, i); /* Can't fail */
-    	line = PyString_AsString( strObj );  /* make it a string */
+    	line = PyString_AsString(strObj);  /* make it a string */
         vector_data.push_back(line);
 
         if (labels != NULL) {
