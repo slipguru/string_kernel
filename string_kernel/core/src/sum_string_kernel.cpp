@@ -20,7 +20,7 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     // char * token;       /* token parsed by strtok */
 
     // Kernel parameters
-    const float c = 1e12;  // unused
+    // const float c = 1e12;  // unused
     int normalize = 1;
     const int symbol_size = 255;  // A size of an alphabet
     const int max_length = 1000;  // A maximum sequence length
@@ -84,7 +84,7 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
               << std::endl;
 
     // Main computations
-    SumStringKernel<float> string_kernel(min_kn, max_kn, c, normalize,
+    SumStringKernel<float> string_kernel(min_kn, max_kn, normalize,
                                          symbol_size, max_length, lambda);
     string_kernel.set_data(vector_data);
     string_kernel.compute_kernel();

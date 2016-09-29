@@ -70,8 +70,8 @@ int main(int argc, char **argv) {
   string kernel_file(argv[1]);
 
   // Kernel parameters
-  const float c = 1e12;
-  const int normalize = 1;
+  // const float c = 1e12;
+  const int normalize = 0;
   const int symbol_size = 255;  // A size of an alphabet
   const int max_length = 1000;  // A maximum sequence length
   int min_kn = 1;                   // A level of susbsequence matching
@@ -94,7 +94,8 @@ int main(int argc, char **argv) {
   dummy_labels.push_back("-1");
 
   // Main computations
-  SumStringKernel<float> string_kernel(min_kn, max_kn, c, normalize, symbol_size, max_length, lambda);
+  SumStringKernel<float> string_kernel(min_kn, max_kn, normalize, symbol_size,
+                                       max_length, lambda);
   string_kernel.set_data(dummy_data);
   string_kernel.compute_kernel();
 

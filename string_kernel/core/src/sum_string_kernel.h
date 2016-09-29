@@ -27,7 +27,9 @@ class SumStringKernel {
 
   ~SumStringKernel() {
         delete [] _kernel;
-        delete [] _norms;
+        if(_normalize) {
+            delete [] _norms;
+        }
 
         for (size_t i = 0; i < _num_subseq_length; i++)
             delete _string_kernels[i];

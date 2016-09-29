@@ -4,7 +4,7 @@ import pandas as pd
 from string_kernel import io
 from string_kernel.core.src import string_kernel, sum_string_kernel
 
-df = io.pdb_to_df('/home/fede/Downloads/data_CLL_2015/data_CLL_2015/models_rf (copy)')
+df = io.pdb_to_df('/home/fede/projects_local/data_CLL_2015/models_rf (copy)')
 
 df_tmp = pd.read_csv("/home/fede/Dropbox/projects/Franco_Fabio_Marcat/conversioni_ID/tab_final_merged_newid_mutation.csv")
 
@@ -21,10 +21,12 @@ for i in folders:
 
 min_kn = 1
 max_kn = 5
-lamda = .75
+lamda = .50
+normalize = 0
 for i in df.columns:
     sum_string_kernel.sum_string_kernel(
         list(df[i]),
-        filename='{}_kn{}-{}_l{}.csv'.format(i, min_kn, max_kn, lamda),
-        min_kn=min_kn, max_kn=max_kn, lamda=lamda, labels=new_ids
+        filename='{}_kn{}-{}_l{}_norm{}.csv'.format(i, min_kn, max_kn, lamda, normalize),
+        min_kn=min_kn, max_kn=max_kn, lamda=lamda, labels=new_ids,
+        normalize=normalize
     )

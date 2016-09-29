@@ -61,7 +61,9 @@ class StringKernel {
 
   ~StringKernel() {
     delete [] _kernel;
-    delete [] norms;
+    if(_normalize) {
+        delete [] norms;
+    }
     if(_private_dataset) {
         delete _string_data;
     }
