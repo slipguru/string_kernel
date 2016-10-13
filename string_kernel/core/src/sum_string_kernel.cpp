@@ -22,6 +22,7 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     // Kernel parameters
     // const float c = 1e12;  // unused
     int normalize = 1;
+    int verbose = 0;
     const int symbol_size = 255;  // A size of an alphabet
     const int max_length = 1000;  // A maximum sequence length
     int min_kn = 1;                   // A level of subsequence matching
@@ -41,9 +42,10 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     char * filename = (char *)"output.txt"; // default value
 
     static char *kwlist[] = {(char*)"sequences", (char*)"filename", (char*)"normalize",
-                             (char*)"min_kn", (char*)"max_kn", (char*)"lamda", (char*)"labels", NULL};
+                             (char*)"min_kn", (char*)"max_kn", (char*)"lamda", (char*)"labels",
+                             (char*)"verbose", NULL};
     /* the O! parses for a Python object (listObj) checked to be of type PyList_Type */
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidO!", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidO!i", kwlist,
                                      &PyList_Type, &listObj, &filename,
                                      &normalize, &min_kn, &max_kn, &lambda,
                                      &PyList_Type, &labels))
@@ -75,13 +77,15 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
 	}
 
     // DEBUG
-    std::cout << "Parameters:"
-              << "\n\tfilename: " << filename
-              << "\n\tnormalize: " << normalize
-              << "\n\tmin_kn: " << min_kn
-              << "\n\tmax_kn: " << max_kn
-              << "\n\tlambda: " << lambda
-              << std::endl;
+    if(verbose) {
+        std::cout << "Parameters:"
+        << "\n\tfilename: " << filename
+        << "\n\tnormalize: " << normalize
+        << "\n\tmin_kn: " << min_kn
+        << "\n\tmax_kn: " << max_kn
+        << "\n\tlambda: " << lambda
+        << std::endl;
+    }
 
     // Main computations
     SumStringKernel<float> string_kernel(min_kn, max_kn, normalize,
