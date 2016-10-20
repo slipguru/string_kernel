@@ -9,8 +9,12 @@ Licensed under the FreeBSD license (see LICENSE.txt).
 from distutils.core import setup, Extension
 
 # Package Version
-sk_module = Extension('string_kernel.core.src.string_kernel', sources=['string_kernel/core/src/string_kernel.cpp'])
-ssk_module = Extension('string_kernel.core.src.sum_string_kernel', sources=['string_kernel/core/src/sum_string_kernel.cpp'])
+# sk_module = Extension(
+#     'string_kernel.core.src.string_kernel',
+#     sources=['string_kernel/core/src/string_kernel.cpp'])
+ssk_module = Extension(
+    'string_kernel.core.src.sum_string_kernel',
+    sources=['string_kernel/core/src/sum_string_kernel.cpp'])
 setup(
     name='string_kernel',
     version='0.1a',
@@ -45,5 +49,6 @@ setup(
               'matplotlib (>=1.5.1)',
               'seaborn (>=0.7.0)'],
     # scripts=['scripts/ici_run.py', 'scripts/ici_analysis.py'],
-    ext_modules=[sk_module, ssk_module]
+    # ext_modules=[sk_module, ssk_module]
+    ext_modules=[ssk_module]
 )
