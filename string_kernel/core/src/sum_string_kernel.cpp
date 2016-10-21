@@ -42,13 +42,13 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     char * filename = (char *)"output.txt"; // default value
 
     static char *kwlist[] = {(char*)"sequences", (char*)"filename", (char*)"normalize",
-                             (char*)"min_kn", (char*)"max_kn", (char*)"lamda", (char*)"labels",
-                             (char*)"verbose", NULL};
+                             (char*)"min_kn", (char*)"max_kn", (char*)"lamda",
+                             (char*)"verbose", (char*)"labels", NULL};
     /* the O! parses for a Python object (listObj) checked to be of type PyList_Type */
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidO!i", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidiO!", kwlist,
                                      &PyList_Type, &listObj, &filename,
                                      &normalize, &min_kn, &max_kn, &lambda,
-                                     &PyList_Type, &labels))
+                                     &verbose, &PyList_Type, &labels))
         return NULL;
 
     /* get the number of lines passed */
