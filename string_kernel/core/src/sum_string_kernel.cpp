@@ -23,6 +23,7 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     // const float c = 1e12;  // unused
     int normalize = 1;
     int verbose = 0;
+    int save_output = 0;
     const int symbol_size = 255;  // A size of an alphabet
     const int max_length = 1000;  // A maximum sequence length
     int min_kn = 1;                   // A level of subsequence matching
@@ -43,12 +44,14 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
 
     static char *kwlist[] = {(char*)"sequences", (char*)"filename", (char*)"normalize",
                              (char*)"min_kn", (char*)"max_kn", (char*)"lamda",
+                             (char*)"save_output",
                              (char*)"verbose", (char*)"labels", NULL};
     /* the O! parses for a Python object (listObj) checked to be of type PyList_Type */
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidiO!", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidiiO!", kwlist,
                                      &PyList_Type, &listObj, &filename,
                                      &normalize, &min_kn, &max_kn, &lambda,
-                                     &verbose, &PyList_Type, &labels))
+                                     &verbose, &save_output, &PyList_Type,
+                                     &labels))
         return NULL;
 
     /* get the number of lines passed */
@@ -93,11 +96,12 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     string_kernel.set_data(vector_data);
     string_kernel.compute_kernel();
 
-    if (!write_kernel(kernel_file, vector_labels, string_kernel)) {
+    if (save_output) {
+      if (!write_kernel(kernel_file, vector_labels, string_kernel)) {
         PyErr_SetString(PyExc_IOError, "Cannot write to filename specified");
         return NULL;
+      }
     }
-
 
     // build the numpy matrix to pass back to the Python code
     // need to copy data to prevent the deleting in strin kernel class
