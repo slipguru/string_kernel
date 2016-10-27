@@ -14,14 +14,16 @@ class SumStringKernel {
   /** Constructor, sets kernel parameters. */
   SumStringKernel(int min_kn, int max_kn,
                   const int normalize, const int symbol_size,
-                  const size_t max_length, double lambda)
+                  const size_t max_length, double lambda, const int hard_matching)
       : _min_kn(min_kn), _max_kn(max_kn), _normalize(normalize),
-        _symbol_size(symbol_size), _max_length(max_length) {
+        _symbol_size(symbol_size), _max_length(max_length),
+        _hard_matching(hard_matching) {
             _num_subseq_length = max_kn - min_kn + 1;
             _string_kernels = new StringKernel<k_type> *[_num_subseq_length];
             for (size_t i = 0; i < _num_subseq_length; i++) {
                 // force normalize false in the StringKernel
-                _string_kernels[i] = new StringKernel<k_type>(0, symbol_size, max_length, min_kn + i, lambda);
+                _string_kernels[i] = new StringKernel<k_type>(0, symbol_size,
+                    max_length, min_kn + i, lambda, hard_matching);
             }
         }
 
@@ -63,6 +65,7 @@ class SumStringKernel {
   const int _normalize;
   const int _symbol_size;
   const size_t _max_length;
+  const int _hard_matching;
   size_t _num_subseq_length;
   // const double _lambda;
   DataSet *_string_data;

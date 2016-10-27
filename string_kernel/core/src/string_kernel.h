@@ -48,13 +48,14 @@ class StringKernel {
  public:
   /** Constructor, sets kernel parameters. */
   StringKernel(int normalize, int symbol_size,
-               size_t max_length, int kn, double lambda)
+               size_t max_length, int kn, double lambda, int hard_matching)
         {
             _normalize = normalize;
             _symbol_size = symbol_size;
             _max_length = max_length;
             _kn = kn;
             _lambda = lambda;
+            _hard_matching = hard_matching;
             _string_data = 0;
             _kernel = 0;
         }
@@ -78,7 +79,7 @@ class StringKernel {
   void compute_norms();
 
   /** Return pointer to kernel matrix. */
-  k_type **values() const {
+  k_type * values() const {
     assert(_kernel);
     return _kernel;
   }
@@ -90,6 +91,7 @@ class StringKernel {
   }
 
  // protected:
+  int _hard_matching;
   int _normalize;
   int _symbol_size;
   size_t _max_length;
@@ -125,57 +127,35 @@ void StringKernel<k_type>::set_data(DataSet * dataset) {
 template<class k_type>
 k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) const {
     size_t i, j, k;
-    k_type **Kd[2]; // TODO make Kd two matrices mono dimensional
+    k_type * Kd[2];
+    size_t x_dim = x.length + 1;
+    size_t y_dim = y.length + 1;
 
-    // Allocate Kd
+    // Allocate and initialise Kd
     for (i = 0; i < 2; i++) {
-      Kd[i] = new k_type *[x.length + 1];
-      for (j = 0; j < x.length + 1; j++) {
-          Kd[i][j] = new k_type[y.length + 1];
+      Kd[i] = new k_type [x_dim * y_dim];
+      for (j = 0; j < x_dim * y_dim; j++) {
+          Kd[i][j] = (i + 1) % 2;
       }
     }
 
-  // Initialise Kd
-  for (i = 0; i < 2; i++) {
-      for (j = 0; j < (x.length + 1); j++) {
-          for (k = 0; k < (y.length + 1); k++) {
-              Kd[i][j][k] = (i + 1) % 2;
-          }
-      }
-  }
   // Kd now contains two matrices, that are n+1 x m+1 (empty string included)
   // Kd[0] is composed by 1s (follows the definition of K_0)
   // Kd[1] is composed by 0s -> it starts to be filled
 
   // start with i = kn = 1, 2, 3 ...
-  for (i = 1; i <= (_kn - 1); i++) {
+  for (i = 1; i < _kn; i++) {
     /* Set the Kd to zero for those lengths of s and t
     where s (or t) has exactly length i-1 and t (or s)
     has length >= i-1. L-shaped upside down matrix */
-    for (j = (i - 1); j <= (x.length - 1); j++) {
-      Kd[i % 2][j][i - 1] = 0;
+    for (j = (i - 1); j < x.length; j++) {
+      Kd[i % 2][j * y_dim + i - 1] = 0;
     }
-    for (j = (i - 1); j <= (y.length - 1); j++) {
-      Kd[i % 2][i - 1][j] = 0;
+    for (j = (i - 1); j < y.length; j++) {
+      Kd[i % 2][(i - 1) * y_dim + j] = 0;
     }
 
-    for (j = i; j <= (x.length - 1); j++) {
-      // Kdd maintains the contribution of the left and diagonal terms
-      // that is, ONLY the contribution of the left (not influenced by the
-      // upper terms) and the eventual contibution of lambda^2 in case the
-      // chars are the same
-      k_type Kdd = 0;
-      for (k = i; k <= (y.length - 1); k++) {
-        if (x.attributes[j - 1] != y.attributes[k - 1]) {
-          // ((.))-1 is because indices start with 0 (not with 1)
-          Kdd = _lambda * Kdd;
-        } else {
-          Kdd = _lambda * (Kdd + (_lambda * Kd[(i + 1) % 2][j - 1][k - 1]));
-        }
-        Kd[i % 2][j][k] = _lambda * Kd[i % 2][j - 1][k] + Kdd;
-      }
-    }
-    // print matrix, DEBUG
+    // // print matrix, DEBUG
     // for (int zzz = 0; zzz < 2; zzz++) {
     //     printf("########### Kd[%d] ##########\n", zzz);
     //     int _i;
@@ -188,34 +168,48 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
     //         if(j==0) printf("e ");
     //         else printf("%c ", x.attributes[j-1]);
     //         for (int k = 0; k < (y.length + 1); k++) {
-    //             printf("%.9f ", Kd[zzz][j][k]);
+    //             printf("%.9f ", Kd[zzz][j*y_dim + k]);
     //         }
     //         printf("\n");
     //     }
     // }
+
+    for (j = i; j < x.length; j++) {
+      // Kdd maintains the contribution of the left and diagonal terms
+      // that is, ONLY the contribution of the left (not influenced by the
+      // upper terms) and the eventual contibution of lambda^2 in case the
+      // chars are the same
+      k_type Kdd = 0;
+      for (k = i; k < y.length; k++) {
+        if (x.attributes[j - 1] != y.attributes[k - 1]) {
+          // ((.))-1 is because indices start with 0 (not with 1)
+          Kdd = _lambda * Kdd;
+        } else {
+          Kdd = _lambda * (Kdd + (_lambda * Kd[(i + 1) % 2][(j - 1)*y_dim + k - 1]));
+        }
+        Kd[i % 2][j*y_dim+k] = _lambda * Kd[i % 2][(j - 1) * y_dim + k] + Kdd;
+      }
+    }
   }
 
   // Calculate K
   k_type sum = 0;
-  for (i = _kn; i <= x.length; i++) {
-    for (j = _kn; j <= y.length; j++) {
+  for (i = _kn - 1; i < x.length; i++) {
+    for (j = _kn - 1; j < y.length; j++) {
         // hard matching
-        // if (x.attributes[((i)) - 1] == y.attributes[((j)) - 1]) {
-        //     sum += _lambda * _lambda * Kd[(_kn - 1) % 2][i - 1][j - 1];
-        // }
-
-        // soft matching, regulated from models.h, amminoacidic model
-        sum += _lambda * _lambda * aa_model[(x.attributes[i-1]-'A')*26 + \
-               y.attributes[j-1]-'A'] * Kd[(_kn - 1) % 2][i - 1][j - 1];
+        if(_hard_matching) {
+            if (x.attributes[i] == y.attributes[j]) {
+                sum += _lambda * _lambda * Kd[(_kn - 1) % 2][i*y_dim + j];
+            }
+        } else {
+            // soft matching, regulated from models.h, amminoacidic model
+            sum += _lambda * _lambda * \
+                aa_model[(x.attributes[i]-'A')*26 + y.attributes[j]-'A'] * \
+                Kd[(_kn - 1) % 2][i*y_dim + j];
+        }
     }
   }
 
-  // Delete Kd
-  for (i = 0; i < 2; i++) {
-      for (j = 0; j < x.length + 1; j++) {
-          delete[] Kd[i][j];
-      }
-  }
   for (i = 0; i < 2; i++) {
       delete[] Kd[i];
   }

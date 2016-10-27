@@ -121,13 +121,13 @@ bool write_kernel(const std::string &file_name,
 template <class k_type>
 bool write_kernel_cout(const std::vector<std::string> &labels,
                        const StringKernel<k_type> &kernel) {
-    assert(labels.size() == kernel.size());
+    // assert(labels.size() == kernel.size());
     int size = labels.size();
 
     for (int i = 0; i < size; i++) {
       std::cout << labels[i] << "\t";
       for (int j = 0; j < size; j++)
-        std::cout << kernel.values()[i][j] << "\t";
+        std::cout << kernel.values()[i*size+j] << "\t";
 
       std::cout << std::endl;
     }

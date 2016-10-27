@@ -63,15 +63,13 @@ void usage(const char *exec_name) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 4) {
+  if (argc != 3) {
     usage(argv[0]);
     exit(1);
   }
-  string kernel_file(argv[1]);
-
   // Kernel parameters
-  // const float c = 1e12;
-  const int normalize = 0;
+  const int normalize = 1;
+  const int hard_matching = 0;
   const int symbol_size = 255;  // A size of an alphabet
   const int max_length = 1000;  // A maximum sequence length
   int min_kn = 1;                   // A level of susbsequence matching
@@ -80,31 +78,19 @@ int main(int argc, char **argv) {
 
   // Prepare dummy data
   vector<string> dummy_data;
-  //dummy_data.push_back("The idea behind digital computers may be explained by saying that these machines are intended to carry out any operations which could be done by a human. Alan Turing."); // An original quote from Alan Turing
-  //dummy_data.push_back("The idea may be explained by saying that these intelligent machines are intended to carry out all tasks which could be done by a human."); // A changed sentence
-
-  dummy_data.push_back(argv[2]); // An example of a DNA sequence
-  dummy_data.push_back(argv[3]);
+  dummy_data.push_back(argv[1]); // An example of a DNA sequence
+  dummy_data.push_back(argv[2]);
 
   // Prepare labels for dummy data
   vector<string> dummy_labels;
-  //dummy_labels.push_back(1);
-  //dummy_labels.push_back(1);
   dummy_labels.push_back("-1");
   dummy_labels.push_back("-1");
 
   // Main computations
   SumStringKernel<float> string_kernel(min_kn, max_kn, normalize, symbol_size,
-                                       max_length, lambda);
+                                       max_length, lambda, hard_matching);
   string_kernel.set_data(dummy_data);
   string_kernel.compute_kernel();
 
   write_kernel_cout(dummy_labels, string_kernel);
-  // if (write_kernel(kernel_file, dummy_labels, string_kernel))
-  //   std::cout << "Kernel saved in the libsvm format to: " << kernel_file << std::endl;
-  // else
-  // {
-  //   std::cout << "Error: Cannot write to file: " << kernel_file << std::endl;
-  //   exit(1);
-  // }
 }
