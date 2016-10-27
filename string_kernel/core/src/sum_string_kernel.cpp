@@ -24,6 +24,8 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     int normalize = 1;
     int verbose = 0;
     int save_output = 0;
+    int return_float = 0;
+    int hard_matching = 0;
     const int symbol_size = 255;  // A size of an alphabet
     const int max_length = 1000;  // A maximum sequence length
     int min_kn = 1;                   // A level of subsequence matching
@@ -44,13 +46,16 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
 
     static char *kwlist[] = {(char*)"sequences", (char*)"filename", (char*)"normalize",
                              (char*)"min_kn", (char*)"max_kn", (char*)"lamda",
-                             (char*)"save_output",
-                             (char*)"verbose", (char*)"labels", NULL};
+                             (char*)"save_output", (char*)"hard_matching",
+                             (char*)"verbose", (char*)"return_float",
+                             (char*)"labels", NULL};
     /* the O! parses for a Python object (listObj) checked to be of type PyList_Type */
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidiiO!", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidiiiiO!", kwlist,
                                      &PyList_Type, &listObj, &filename,
                                      &normalize, &min_kn, &max_kn, &lambda,
-                                     &verbose, &save_output, &PyList_Type,
+                                     &save_output, &hard_matching, &verbose,
+                                     &return_float,
+                                     &PyList_Type,
                                      &labels))
         return NULL;
 
@@ -87,12 +92,14 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
         << "\n\tmin_kn: " << min_kn
         << "\n\tmax_kn: " << max_kn
         << "\n\tlambda: " << lambda
+        << "\n\thard_matching: " << hard_matching
         << std::endl;
     }
 
     // Main computations
     SumStringKernel<float> string_kernel(min_kn, max_kn, normalize,
-                                         symbol_size, max_length, lambda);
+                                         symbol_size, max_length, lambda,
+                                         hard_matching);
     string_kernel.set_data(vector_data);
     string_kernel.compute_kernel();
 
@@ -103,8 +110,12 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
       }
     }
 
+    if(return_float && list_size == 2) {
+        return Py_BuildValue("f", string_kernel.values()[1]);
+    }
+
     // build the numpy matrix to pass back to the Python code
-    // need to copy data to prevent the deleting in strin kernel class
+    // need to copy data to prevent the deleting in string kernel class
     // TODO avoid copying data?
     float * data = (float*) malloc(list_size*list_size*sizeof(float));
     if (!data) {
@@ -112,6 +123,7 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
         return NULL;
     }
     string_kernel.copy_kernel(data);
+
 
     npy_intp* size = (npy_intp*)malloc(sizeof(npy_intp)*2);
     size[0] = size[1] = list_size;
