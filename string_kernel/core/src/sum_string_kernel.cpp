@@ -14,13 +14,7 @@
 // static PyArrayObject *
 static PyObject *
 sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
-    // int cols;           /* number of cols to parse, from the left */
-    // int list_size;       /* how many lines we passed for parsing */
-    // char * tok;         /* delimiter tokens for strtok */
-    // char * token;       /* token parsed by strtok */
-
     // Kernel parameters
-    // const float c = 1e12;  // unused
     int normalize = 1;
     int verbose = 0;
     int save_output = 0;
@@ -44,19 +38,18 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     PyObject * labels = NULL; /* the list of strings */
     char * filename = (char *)"output.txt"; // default value
 
-    static char *kwlist[] = {(char*)"sequences", (char*)"filename", (char*)"normalize",
-                             (char*)"min_kn", (char*)"max_kn", (char*)"lamda",
-                             (char*)"save_output", (char*)"hard_matching",
-                             (char*)"verbose", (char*)"return_float",
-                             (char*)"labels", NULL};
+    static char *kwlist[] = {
+        (char*)"sequences", (char*)"filename", (char*)"normalize",
+        (char*)"min_kn", (char*)"max_kn", (char*)"lamda",
+        (char*)"save_output", (char*)"hard_matching",
+        (char*)"verbose", (char*)"return_float",
+        (char*)"labels", NULL
+    };
     /* the O! parses for a Python object (listObj) checked to be of type PyList_Type */
     if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidiiiiO!", kwlist,
-                                     &PyList_Type, &listObj, &filename,
-                                     &normalize, &min_kn, &max_kn, &lambda,
-                                     &save_output, &hard_matching, &verbose,
-                                     &return_float,
-                                     &PyList_Type,
-                                     &labels))
+            &PyList_Type, &listObj, &filename, &normalize, &min_kn, &max_kn,
+            &lambda, &save_output, &hard_matching, &verbose, &return_float,
+            &PyList_Type, &labels))
         return NULL;
 
     /* get the number of lines passed */
@@ -84,7 +77,6 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
         vector_labels.push_back(label);
 	}
 
-    // DEBUG
     if(verbose) {
         std::cout << "Parameters:"
         << "\n\tfilename: " << filename
@@ -129,11 +121,6 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     size[0] = size[1] = list_size;
     PyObject * py_arr = PyArray_SimpleNewFromData(2, size, NPY_FLOAT, data);
     return py_arr;
-
-    // PyObject * py_arr = PyArray_FromDimsAndData(2, dims, PyArray_FLOAT, (char*) data);
-    // return PyArray_Return(py_arr);
-    // PyObject * ret = Py_BuildValue("s", "OK");
-    // return ret;
 }
 
 static PyMethodDef StringKernelMethods[] = {
