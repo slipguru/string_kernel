@@ -72,8 +72,8 @@ int main(int argc, char **argv) {
   const int hard_matching = 0;
   const int symbol_size = 255;  // A size of an alphabet
   const int max_length = 1000;  // A maximum sequence length
-  int min_kn = 1;                   // A level of susbsequence matching
-  int max_kn = 3;                   // A level of susbsequence matching
+  int min_kn = 4;                   // A level of susbsequence matching
+  int max_kn = 5;                   // A level of susbsequence matching
   double lambda = .1;          // A decay factor
 
   // Prepare dummy data

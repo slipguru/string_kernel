@@ -130,6 +130,17 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
     k_type * Kd[2];
     size_t x_dim = x.length + 1;
     size_t y_dim = y.length + 1;
+    if(x.length < _kn || y.length < _kn) {
+        if(x.length == y.length) {
+            for(i = 0; i < x.length; i++) {
+                if(x.attributes[i] != y.attributes[i]) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        return 0;
+    }
 
     // Allocate and initialise Kd
     for (i = 0; i < 2; i++) {
