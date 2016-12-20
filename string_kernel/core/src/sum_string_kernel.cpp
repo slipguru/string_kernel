@@ -88,6 +88,11 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
         << std::endl;
     }
 
+    if(min_kn > max_kn) {
+        PyErr_SetString(PyExc_ValueError, "`min_kn` is higher than `max_kn`");
+        return NULL;
+    }
+
     // Main computations
     SumStringKernel<float> string_kernel(min_kn, max_kn, normalize,
                                          symbol_size, max_length, lambda,
