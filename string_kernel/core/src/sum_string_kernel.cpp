@@ -19,6 +19,7 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     int verbose = 0;
     int save_output = 0;
     int return_float = 0;
+    int check_min_length = 0;
     int hard_matching = 0;
     const int symbol_size = 255;  // A size of an alphabet
     const int max_length = 1000;  // A maximum sequence length
@@ -42,13 +43,14 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
         (char*)"sequences", (char*)"filename", (char*)"normalize",
         (char*)"min_kn", (char*)"max_kn", (char*)"lamda",
         (char*)"save_output", (char*)"hard_matching",
-        (char*)"verbose", (char*)"return_float",
+        (char*)"verbose", (char*)"return_float", (char*)"check_min_length",
         (char*)"labels", NULL
     };
     /* the O! parses for a Python object (listObj) checked to be of type PyList_Type */
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidiiiiO!", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!|siiidiiiiiO!", kwlist,
             &PyList_Type, &listObj, &filename, &normalize, &min_kn, &max_kn,
             &lambda, &save_output, &hard_matching, &verbose, &return_float,
+            &check_min_length,
             &PyList_Type, &labels))
         return NULL;
 
@@ -63,6 +65,9 @@ sum_string_kernel(PyObject *self, PyObject *args, PyObject *keywds) {
     	/* grab the string object from the next element of the list */
     	strObj = PyList_GetItem(listObj, i); /* Can't fail */
     	line = PyString_AsString(strObj);  /* make it a string */
+        if(check_min_length && strlen(line) < min_kn) {
+            min_kn = strlen(line);
+        }
         vector_data.push_back(line);
 
         if (labels != NULL) {
