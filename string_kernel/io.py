@@ -54,7 +54,7 @@ def read_pdb(pdb_file, dialect='excel-tab'):
         seqs = ['', '', '', '', '', '']
         with open(pdb_file, 'rb') as f:
             for line in f:
-                words = line.split("\t")
+                words = [w for w in line.split(" ") if w != '']
                 if words[0] != 'ATOM':
                     continue
                 if words[4] == 'H':

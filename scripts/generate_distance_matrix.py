@@ -4,7 +4,7 @@ import pandas as pd
 from string_kernel import io
 from string_kernel.core.src import string_kernel, sum_string_kernel
 
-df = io.pdb_to_df('/home/fede/projects_local/data_CLL_2015/models_rf (copy)')
+df = io.pdb_to_df('/home/fede/projects_local/fais/data_CLL_2015/models')
 
 # df_tmp = pd.read_csv("/home/fede/Dropbox/projects/Franco_Fabio_Marcat/tab_final_merged_newid_mutation.csv")
 df_tmp = pd.read_csv("/home/fede/Dropbox/projects/Franco_Fabio_Marcat/tab_01-09-16-nodup.csv")
