@@ -43,6 +43,16 @@
 #include "data_set.h"
 #include "models.h"
 
+size_t get_idx_aa(char x) {
+    switch (x) {
+        case '.': return 0;
+        case '-': return 1;
+        case '*': return 2;
+        default: return x - 'A';
+    }
+    return 0; // never reached
+}
+
 template<class k_type>
 class StringKernel {
  public:
@@ -205,6 +215,7 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
 
   // Calculate K
   k_type sum = 0;
+
   for (i = _kn - 1; i < x.length; i++) {
     for (j = _kn - 1; j < y.length; j++) {
         // hard matching
@@ -215,7 +226,8 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
         } else {
             // soft matching, regulated from models.h, amminoacidic model
             sum += _lambda * _lambda * \
-                aa_model[(x.attributes[i]-'A')*26 + y.attributes[j]-'A'] * \
+                aa_model[get_idx_aa(x.attributes[i])*29 +
+                         get_idx_aa(y.attributes[j])] * \
                 Kd[(_kn - 1) % 2][i*y_dim + j];
         }
     }
@@ -226,7 +238,6 @@ k_type StringKernel<k_type>::kernel(const DataElement &x, const DataElement &y) 
   }
   return sum;
 }
-
 
 template<class k_type>
 void StringKernel<k_type>::compute_kernel() {
