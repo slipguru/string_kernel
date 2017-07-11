@@ -47,9 +47,7 @@ setup(
               ],
     requires=['numpy (>=1.10.1)',
               'scipy (>=0.16.1)',
-              'sklearn (>=0.17)',
-              'matplotlib (>=1.5.1)',
-              'seaborn (>=0.7.0)'],
+              'sklearn (>=0.17)'],
     # scripts=['scripts/ici_run.py', 'scripts/ici_analysis.py'],
     # ext_modules=[sk_module, ssk_module]
     ext_modules=[ssk_module],
