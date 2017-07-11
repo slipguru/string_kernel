@@ -36,7 +36,7 @@ def permutations(min_kn=1, max_kn=3, **kwargs):
 
 # Generate X using the explicit feature map of the column HCDR3
 # X is sparse to avoid memory explosion
-def compute_explicit_sk(strings, min_kn=5, max_kn=7, limit=3):
+def compute_explicit_sk(strings, min_kn=5, max_kn=7, limit=3, save_row=False):
     """strings is like df_tr['HCDR3']"""
     col_dict = {}
     max_i = -1
@@ -44,7 +44,7 @@ def compute_explicit_sk(strings, min_kn=5, max_kn=7, limit=3):
     for i, s in enumerate(strings):
         dic = {}
         for d, l, _ in permutations(min_kn=min_kn, max_kn=max_kn, inputstr=s,
-                                    lamda=.5, limit=limit):
+                                    lamda=1, limit=limit):
             dic[d] = dic.get(d, 0) + l
 
         rows_i, cols_i, data_i = [], [], []
@@ -55,8 +55,9 @@ def compute_explicit_sk(strings, min_kn=5, max_kn=7, limit=3):
             rows_i.append(i)
             cols_i.append(col_dict[d])
             data_i.append(dic[d])
-        with open("_row_%s.pkl" % s, 'wb') as ff:
-            pkl.dump([rows_i, cols_i, data_i], ff)  # avoid memory explosion
+        if save_row:
+            with open("_row_%s.pkl" % s, 'wb') as ff:
+                pkl.dump([rows_i, cols_i, data_i], ff)  # avoid memory explosion
         rows.extend(rows_i)
         cols.extend(cols_i)
         data.extend(data_i)
