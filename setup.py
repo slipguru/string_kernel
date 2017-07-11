@@ -6,7 +6,7 @@ Copyright (c) 2016, Federico Tomasi.
 Licensed under the FreeBSD license (see LICENSE.txt).
 """
 
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 import numpy as np
 
 # Package Version
