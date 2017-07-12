@@ -100,12 +100,12 @@ class StringKernel(BaseEstimator):
         return self
 
 
-def _worker_string_kernel(estimator, strings, kn):
+def _worker_string_kernel(estimator, strings, kn, normalize=False):
     single_kernel = StringKernel(
         kn=kn, lamda=estimator.lamda,
         check_min_length=estimator.check_min_length,
         hard_matching=estimator.hard_matching,
-        normalize=False).fit(strings).kernel_
+        normalize=normalize).fit(strings).kernel_
     return single_kernel
 
 
@@ -113,13 +113,15 @@ class SumStringKernel(BaseEstimator):
     """Utility class for string kernel."""
 
     def __init__(self, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
-                 check_min_length=0, hard_matching=True, normalize=True):
+                 check_min_length=0, hard_matching=True, normalize=True,
+                 normalize_before=False):
         self.min_kn = min_kn
         self.max_kn = max_kn
         self.lamda = lamda
         self.check_min_length = check_min_length
         self.hard_matching = hard_matching
         self.normalize = normalize
+        self.normalize_before = normalize_before
         self.n_jobs = n_jobs
 
     def pairwise(self, x1, x2):
@@ -139,10 +141,11 @@ class SumStringKernel(BaseEstimator):
                     kn=kn, lamda=self.lamda,
                     check_min_length=self.check_min_length,
                     hard_matching=self.hard_matching,
-                    normalize=False).fit(strings).kernel_
+                    normalize=self.normalize_before).fit(strings).kernel_
         else:
             kernel = jl.Parallel(n_jobs=self.n_jobs)(jl.delayed(_worker_string_kernel)(
-                self, strings, kn) for kn in range(self.min_kn, self.max_kn + 1))
+                self, strings, kn, self.normalize_before) for kn in range(
+                    self.min_kn, self.max_kn + 1))
             kernel = reduce(lambda x, y: sum((x, y)), kernel)
 
         if self.normalize:
