@@ -128,9 +128,10 @@ class SumStringKernel(BaseEstimator):
         self.fit((x1, x2))
         return self.kernel_[0, 1]
 
-    def fit(self, strings):
+    def fit(self, X, y=None):
         """Kernel is built as the sum of string kernels of different length."""
         # Get values for normalization, it is computed for elements in diagonal
+        strings = X
         n_samples = len(strings)
 
         # special case
@@ -158,3 +159,9 @@ class SumStringKernel(BaseEstimator):
         self.kernel_ = kernel
 
         return self
+
+    def transform(self, X):
+        return self.kernel_
+
+    def fit_transform(self, X, y=None):
+        return self.fit(X, y).transform(X)
