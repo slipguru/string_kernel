@@ -1,6 +1,6 @@
 import joblib as jl
 import numpy as np
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class StringKernel(BaseEstimator):
@@ -109,12 +109,44 @@ def _worker_string_kernel(estimator, strings, kn, normalize=False):
     return single_kernel
 
 
-class SumStringKernel(BaseEstimator):
+def sumstringkernel(strings, estimator, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
+                    check_min_length=0, hard_matching=True, normalize=True,
+                    normalize_before=False):
+
+    n_samples = strings.size
+
+    # special case
+    if n_jobs == 1:
+        kernel = np.zeros((n_samples, n_samples))
+        for kn in range(min_kn, max_kn + 1):
+            kernel += StringKernel(
+                kn=kn, lamda=lamda,
+                check_min_length=check_min_length,
+                hard_matching=hard_matching,
+                normalize=normalize_before).fit(strings).kernel_
+    else:
+        kernel = jl.Parallel(n_jobs=n_jobs)(jl.delayed(_worker_string_kernel)(
+            estimator, strings, kn, normalize_before) for kn in range(
+                min_kn, max_kn + 1))
+        kernel = reduce(lambda x, y: sum((x, y)), kernel)
+
+    if normalize:
+        for i in range(n_samples):
+            for j in range(i + 1, n_samples):
+                kernel[i, j] /= np.sqrt(kernel[i, i] * kernel[j, j])
+                kernel[j, i] = kernel[i, j]
+        kernel.flat[::n_samples + 1] = 1
+
+    return kernel
+
+
+class SumStringKernel(BaseEstimator, TransformerMixin):
     """Utility class for string kernel."""
 
     def __init__(self, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
                  check_min_length=0, hard_matching=True, normalize=True,
                  normalize_before=False):
+        super(SumStringKernel, self).__init__()
         self.min_kn = min_kn
         self.max_kn = max_kn
         self.lamda = lamda
@@ -125,43 +157,32 @@ class SumStringKernel(BaseEstimator):
         self.n_jobs = n_jobs
 
     def pairwise(self, x1, x2):
-        self.fit((x1, x2))
-        return self.kernel_[0, 1]
+        return self.fit_transform((x1, x2))[0, 1]
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, **fit_params):
         """Kernel is built as the sum of string kernels of different length."""
         # Get values for normalization, it is computed for elements in diagonal
-        strings = X
-        n_samples = len(strings)
-
-        # special case
-        if self.n_jobs == 1:
-            kernel = np.zeros((n_samples, n_samples))
-            for kn in range(self.min_kn, self.max_kn + 1):
-                kernel += StringKernel(
-                    kn=kn, lamda=self.lamda,
-                    check_min_length=self.check_min_length,
-                    hard_matching=self.hard_matching,
-                    normalize=self.normalize_before).fit(strings).kernel_
-        else:
-            kernel = jl.Parallel(n_jobs=self.n_jobs)(jl.delayed(_worker_string_kernel)(
-                self, strings, kn, self.normalize_before) for kn in range(
-                    self.min_kn, self.max_kn + 1))
-            kernel = reduce(lambda x, y: sum((x, y)), kernel)
-
-        if self.normalize:
-            for i in range(n_samples):
-                for j in range(i + 1, n_samples):
-                    kernel[i, j] /= np.sqrt(kernel[i, i] * kernel[j, j])
-                    kernel[j, i] = kernel[i, j]
-            kernel.flat[::n_samples + 1] = 1
-
-        self.kernel_ = kernel
-
+        self.X_train_ = X
         return self
 
     def transform(self, X):
-        return self.kernel_
+        same_x = np.all(X == self.X_train_)
+        if same_x:
+            # X is not changed (ie in fit transform), optimise
+            strings = np.array(self.X_train_)
+        else:
+            strings = np.append(X, self.X_train_)
+        kernel = sumstringkernel(
+            strings, self, min_kn=self.min_kn, max_kn=self.max_kn,
+            lamda=self.lamda, n_jobs=self.n_jobs,
+            check_min_length=self.check_min_length,
+            hard_matching=self.hard_matching, normalize=self.normalize,
+            normalize_before=self.normalize_before)
+        if same_x:
+            return kernel
+        else:
+            # top-right part
+            return kernel[:len(X), len(X):]
 
     def fit_transform(self, X, y=None):
         return self.fit(X, y).transform(X)
