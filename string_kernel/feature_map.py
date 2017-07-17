@@ -85,11 +85,13 @@ def explicit_sk_dataframe(strings, min_kn=1, max_kn=2, limit=3, lamda=.5,
         for i in range(minimum, maximum+1):
             df_i = df.loc[:, lengths == i]
             df_i = df_i.div(np.sqrt(np.square(df_i).sum(axis=1)), axis=0)
+            df_i.fillna(0)
             df_res = pd.concat([df_res, df_i], axis=1)
         df = df_res
 
     if normalize:
         df = df.div(np.sqrt(np.square(df).sum(axis=1)), axis=0)
+        df.fillna(0)
     return df
 
 
