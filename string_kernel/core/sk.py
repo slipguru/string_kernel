@@ -19,7 +19,7 @@ def _core_stringkernel(x, y, kn, lamda, hard_matching, aa_model=None):
     len_x, len_y = len(x), len(y)
     if len_x < kn or len_y < kn:
         # do not compute kernel
-        return x == y
+        return int(x == y)
 
     x_dim = len_x + 1
     y_dim = len_y + 1
@@ -116,7 +116,7 @@ def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
                    combinations(range(n_samples), 2)]
         norms = 1
 
-    kernel[iu1] = kernel[il1] = values
+    kernel[iu1] = kernel[il1] = values.ravel()
     kernel.flat[::n_samples + 1] = norms
 
     if return_norms:
@@ -271,7 +271,7 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None, **fit_params):
         """Kernel is built as the sum of string kernels of different length."""
         # Get values for normalization, it is computed for elements in diagonal
-        self.X_train_ = X
+        self.X_train_ = X.ravel()
         return self
 
     def transform(self, X):
@@ -289,7 +289,7 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
             kernel = ssk.get_kernel_matrix()
         else:
             kernel = sumstringkernel(
-                X, self.X_train_, min_kn=self.min_kn, max_kn=self.max_kn,
+                X.ravel(), self.X_train_, min_kn=self.min_kn, max_kn=self.max_kn,
                 lamda=self.lamda, n_jobs=self.n_jobs,
                 check_min_length=self.check_min_length, aa_model=self.aa_model,
                 hard_matching=self.hard_matching, normalize=self.normalize,
