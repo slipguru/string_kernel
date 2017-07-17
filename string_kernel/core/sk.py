@@ -207,6 +207,7 @@ def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
             single_kernel.transform(X)
             if return_norms:
                 norms += single_kernel.norms_
+            kernel += single_kernel
     else:
         kernel = jl.Parallel(n_jobs=n_jobs)(jl.delayed(_worker_string_kernel)(
             X=X, X_train=X_train_, kn=kn, lamda=lamda,
