@@ -129,7 +129,7 @@ def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
 def stringkernel(X, X_train_, kn=1, lamda=.5,
                  hard_matching=True, normalize=True,
                  aa_model=None, return_norms=False):
-    if np.all(X == X_train_):
+    if len(X) == len(X_train_) and np.all(X == X_train_):
         return _stringkernel_symmetric(
             X, kn=kn, lamda=lamda, hard_matching=hard_matching,
             normalize=normalize, aa_model=aa_model, return_norms=return_norms)
@@ -187,7 +187,7 @@ def _worker_string_kernel(X, X_train, kn, lamda=.5, check_min_length=0,
 def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
                     check_min_length=0, hard_matching=True, normalize=True,
                     normalize_before=False, aa_model=None):
-    same_x = np.all(X == X_train_)
+    same_x = len(X) == len(X_train_) and np.all(X == X_train_)
     x_len = len(X)
     y_len = len(X_train_)
 
