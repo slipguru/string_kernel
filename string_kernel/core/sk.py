@@ -186,7 +186,7 @@ def _worker_string_kernel(X, X_train, kn, lamda=.5, check_min_length=0,
 
 def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
                     check_min_length=0, hard_matching=True, normalize=True,
-                    normalize_before=False, aa_model=None):
+                    normalize_before=False, aa_model=None, verbose=0):
     same_x = len(X) == len(X_train_) and np.all(X == X_train_)
     x_len = len(X)
     y_len = len(X_train_)
@@ -243,6 +243,8 @@ def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
     # if not same_x:
     #     # top-right part
     #     kernel = kernel[:len(X), len(X):]
+    if verbose:
+        print("SumStringKernel: kernel computed")
 
     return kernel
 
@@ -252,7 +254,8 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
 
     def __init__(self, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
                  check_min_length=0, hard_matching=True, normalize=True,
-                 normalize_before=False, aa_model=None, shogun=False):
+                 normalize_before=False, aa_model=None, shogun=False,
+                 verbose=0):
         super(SumStringKernel, self).__init__()
         self.min_kn = min_kn
         self.max_kn = max_kn
@@ -264,6 +267,7 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
         self.n_jobs = n_jobs
         self.shogun = shogun
         self.aa_model = aa_model
+        self.verbose = verbose
 
     def pairwise(self, x1, x2):
         return self.fit_transform((x1, x2))[0, 1]
@@ -293,5 +297,5 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
                 lamda=self.lamda, n_jobs=self.n_jobs,
                 check_min_length=self.check_min_length, aa_model=self.aa_model,
                 hard_matching=self.hard_matching, normalize=self.normalize,
-                normalize_before=self.normalize_before)
+                normalize_before=self.normalize_before, verbose=self.verbose)
         return kernel
