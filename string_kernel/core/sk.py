@@ -81,17 +81,17 @@ def _stringkernel_unsymmetric(X, X_train_, kn=1, lamda=.5,
     kernel = np.empty((x_len, y_len))
     function = partial(_core_stringkernel, kn=kn, lamda=lamda,
                        hard_matching=hard_matching, aa_model=aa_model)
-    kernel = np.array([function(x, y) for x in X for y in X_train_]) \
-        .reshape(x_len, y_len)
+    kernel = np.array([function(x, y) for x in X for y in X_train_],
+                      dtype=float).reshape(x_len, y_len)
 
     if return_norms or normalize:
         norms_x = [function(x, x) for x in X]
         norms_y = [function(x, x) for x in X_train_]
-        norms = np.array(norms_x + norms_y)
+        norms = np.array(norms_x + norms_y, dtype=float)
     if normalize:
         x_grid, y_grid = np.meshgrid(norms_y, norms_x)
         kernel /= np.sqrt(x_grid * y_grid)
-        norms = np.ones_like(norms)
+        norms = np.ones_like(norms, dtype=float)
 
     if return_norms:
         return kernel, norms
@@ -108,8 +108,9 @@ def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
 
     function = partial(_core_stringkernel, kn=kn, lamda=lamda,
                        hard_matching=hard_matching, aa_model=aa_model)
-    values = np.array([function(x, y) for x, y in combinations(X, 2)])
-    norms = np.array([function(x, x) for x in X])
+    values = np.array([function(x, y) for x, y in combinations(X, 2)],
+                      dtype=float)
+    norms = np.array([function(x, x) for x in X], dtype=float)
 
     if normalize:
         values /= [np.sqrt(norms[i] * norms[j]) for i, j in
