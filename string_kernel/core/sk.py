@@ -74,20 +74,27 @@ def _core_stringkernel(x, y, kn, lamda, hard_matching, aa_model=None):
 
 def _stringkernel_unsymmetric(X, X_train_, kn=1, lamda=.5,
                               hard_matching=True, normalize=True,
-                              aa_model=None, return_norms=False):
+                              aa_model=None, return_norms=False, n_jobs=1):
     # X != X_train_
     x_len = len(X)
     y_len = len(X_train_)
     kernel = np.empty((x_len, y_len))
     function = partial(_core_stringkernel, kn=kn, lamda=lamda,
                        hard_matching=hard_matching, aa_model=aa_model)
-    kernel = np.array([function(x, y) for x in X for y in X_train_],
-                      dtype=float).reshape(x_len, y_len)
+    # result_ = [function(x, y) for x in X for y in X_train_]
+    result_ = jl.Parallel(n_jobs=n_jobs)(jl.delayed(function)(
+        x, y) for x in X for y in X_train_)
+    kernel = np.array(result_, dtype=float).reshape(x_len, y_len)
 
     if return_norms or normalize:
-        norms_x = [function(x, x) for x in X]
-        norms_y = [function(x, x) for x in X_train_]
+        # norms_x = [function(x, x) for x in X]
+        norms_x = jl.Parallel(n_jobs=n_jobs)(jl.delayed(function)(
+            x, x) for x in X)
+        # norms_y = [function(x, x) for x in X_train_]
+        norms_y = jl.Parallel(n_jobs=n_jobs)(jl.delayed(function)(
+            x, x) for x in X_train_)
         norms = np.array(norms_x + norms_y, dtype=float)
+
     if normalize:
         x_grid, y_grid = np.meshgrid(norms_y, norms_x)
         kernel /= np.sqrt(x_grid * y_grid)
@@ -99,7 +106,8 @@ def _stringkernel_unsymmetric(X, X_train_, kn=1, lamda=.5,
 
 
 def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
-                            normalize=True, aa_model=None, return_norms=False):
+                            normalize=True, aa_model=None, return_norms=False,
+                            n_jobs=1):
     # X is not changed (ie in fit transform), optimise
     n_samples = len(X)
     kernel = np.empty((n_samples, n_samples))
@@ -108,9 +116,14 @@ def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
 
     function = partial(_core_stringkernel, kn=kn, lamda=lamda,
                        hard_matching=hard_matching, aa_model=aa_model)
-    values = np.array([function(x, y) for x, y in combinations(X, 2)],
-                      dtype=float)
-    norms = np.array([function(x, x) for x in X], dtype=float)
+    # result_ = [function(x, y) for x, y in combinations(X, 2)]
+    result_ = jl.Parallel(n_jobs=n_jobs)(jl.delayed(function)(
+        x, y) for x, y in combinations(X, 2))
+    values = np.array(result_, dtype=float)
+    # norms = np.array([function(x, x) for x in X], dtype=float)
+    norms = jl.Parallel(n_jobs=n_jobs)(jl.delayed(function)(
+        x, x) for x in X)
+    norms = np.array(norms, dtype=float)
 
     if normalize:
         values /= [np.sqrt(norms[i] * norms[j]) for i, j in
@@ -129,15 +142,17 @@ def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
 
 def stringkernel(X, X_train_, kn=1, lamda=.5,
                  hard_matching=True, normalize=True,
-                 aa_model=None, return_norms=False):
+                 aa_model=None, return_norms=False, n_jobs=1):
     if len(X) == len(X_train_) and np.all(X == X_train_):
         return _stringkernel_symmetric(
             X, kn=kn, lamda=lamda, hard_matching=hard_matching,
-            normalize=normalize, aa_model=aa_model, return_norms=return_norms)
+            normalize=normalize, aa_model=aa_model, return_norms=return_norms,
+            n_jobs=n_jobs)
 
     return _stringkernel_unsymmetric(
         X, X_train_, kn=kn, lamda=lamda, hard_matching=hard_matching,
-        normalize=normalize, aa_model=aa_model, return_norms=return_norms)
+        normalize=normalize, aa_model=aa_model, return_norms=return_norms,
+        n_jobs=n_jobs)
 
 
 class StringKernel(BaseEstimator, TransformerMixin):
@@ -145,7 +160,7 @@ class StringKernel(BaseEstimator, TransformerMixin):
 
     def __init__(self, kn=1, lamda=.5, check_min_length=0,
                  hard_matching=1, normalize=True,
-                 aa_model=None, return_norms=False):
+                 aa_model=None, return_norms=False, n_jobs=1):
         super(StringKernel, self).__init__()
         self.kn = kn
         self.lamda = lamda
@@ -154,6 +169,7 @@ class StringKernel(BaseEstimator, TransformerMixin):
         self.aa_model = aa_model
         self.normalize = normalize
         self.return_norms = return_norms
+        self.n_jobs = n_jobs
 
     def fit(self, X, y=None, **fit_params):
         """String kernel of a single subsequence length."""
@@ -165,7 +181,7 @@ class StringKernel(BaseEstimator, TransformerMixin):
             X, self.X_train_, kn=self.kn,
             lamda=self.lamda, aa_model=self.aa_model,
             hard_matching=self.hard_matching, normalize=self.normalize,
-            return_norms=self.return_norms)
+            return_norms=self.return_norms, n_jobs=self.n_jobs)
         if self.return_norms:
             kernel, self.norms_ = kernel
         return kernel
@@ -173,12 +189,13 @@ class StringKernel(BaseEstimator, TransformerMixin):
 
 def _worker_string_kernel(X, X_train, kn, lamda=.5, check_min_length=0,
                           hard_matching=True, aa_model=None,
-                          normalize=False, return_norms=False):
+                          normalize=False, return_norms=False, n_jobs=1):
     single_kernel = StringKernel(
         kn=kn, lamda=lamda,
         check_min_length=check_min_length,
         hard_matching=hard_matching, aa_model=aa_model,
-        normalize=normalize, return_norms=return_norms).fit(X_train)
+        normalize=normalize, return_norms=return_norms,
+        n_jobs=n_jobs).fit(X_train)
     kernel = single_kernel.transform(X)
     if return_norms:
         return kernel, single_kernel.norms_
@@ -187,7 +204,8 @@ def _worker_string_kernel(X, X_train, kn, lamda=.5, check_min_length=0,
 
 def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
                     check_min_length=0, hard_matching=True, normalize=True,
-                    normalize_before=False, aa_model=None, verbose=0):
+                    normalize_before=False, aa_model=None, verbose=0,
+                    n_jobs_single=1):
     same_x = len(X) == len(X_train_) and np.all(X == X_train_)
     x_len = len(X)
     y_len = len(X_train_)
@@ -204,7 +222,7 @@ def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
                 check_min_length=check_min_length,
                 hard_matching=hard_matching,
                 normalize=normalize_before,
-                return_norms=return_norms).fit(X_train_)
+                return_norms=return_norms, n_jobs=n_jobs_single).fit(X_train_)
             kernel += single_kernel.transform(X)
             if return_norms:
                 norms += single_kernel.norms_
@@ -214,7 +232,7 @@ def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
             check_min_length=check_min_length,
             hard_matching=hard_matching, aa_model=aa_model,
             normalize=normalize_before,
-            return_norms=return_norms) for kn in range(
+            return_norms=return_norms, n_jobs=n_jobs_single) for kn in range(
                 min_kn, max_kn + 1))
 
         if return_norms:
@@ -256,7 +274,7 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
     def __init__(self, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
                  check_min_length=0, hard_matching=True, normalize=True,
                  normalize_before=False, aa_model=None, shogun=False,
-                 verbose=0):
+                 verbose=0, n_jobs_single=1):
         super(SumStringKernel, self).__init__()
         self.min_kn = min_kn
         self.max_kn = max_kn
@@ -269,6 +287,7 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
         self.shogun = shogun
         self.aa_model = aa_model
         self.verbose = verbose
+        self.n_jobs_single = n_jobs_single
 
     def pairwise(self, x1, x2):
         return self.fit_transform((x1, x2))[0, 1]
@@ -298,5 +317,6 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
                 lamda=self.lamda, n_jobs=self.n_jobs,
                 check_min_length=self.check_min_length, aa_model=self.aa_model,
                 hard_matching=self.hard_matching, normalize=self.normalize,
-                normalize_before=self.normalize_before, verbose=self.verbose)
+                normalize_before=self.normalize_before, verbose=self.verbose,
+                n_jobs_single=self.n_jobs_single)
         return kernel
