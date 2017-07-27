@@ -1,6 +1,10 @@
 """Utilities for Franco IG analysis."""
 import pandas as pd
+import matplotlib.pyplot as plt
 
+from collections import namedtuple
+from lifelines import KaplanMeierFitter
+from lifelines.statistics import logrank_test
 
 # old functions, needed to calculate kaplan-meier manually
 def namedtuple_to_data_kaplan(cluster, verbose=False):
@@ -45,3 +49,76 @@ def print_kaplans(df_list):
     plt.ylim((0,1.1));
 
 # print_kaplans([namedtuple_to_data_kaplan(dfcluster_to_namedtuple(x)) for x in all_clusts])
+
+
+def dfcluster_to_namedtuple(cluster, df, verbose=False, col_os="OS",
+                            col_dead="Alive/Dead"):
+    NamedTuple = namedtuple(
+        'NamedTuple', ['id', 'os', 'dead', 'row'], verbose=False)
+    myclust_filled = []
+    for _id in cluster:
+        # row = df[df['new_id_tm'] == _id]
+        row = df[df['key'] == _id]
+        try:
+            os = list(row[col_os])[0]
+            float(os)
+            dead = list(row[col_dead])[0]
+            if os != '':
+                myclust_filled.append(NamedTuple(_id, os, dead, row))
+        except:
+            if verbose:
+                print("No correspondence for", _id)
+    return sorted(myclust_filled, key=lambda x: x.os)
+
+def print_kaplans_from_clusters(cluster_list, data, ax=None, df=None,
+                                alpha=1e-14, col_os="OS",
+                                col_dead="Alive/Dead",
+                                label=None, verbose=False, **kwargs):
+    if cluster_list == []:
+        return
+    if not isinstance(cluster_list, list):
+        cluster_list = [cluster_list]
+    kmf = KaplanMeierFitter(alpha=alpha)
+    __df = pd.DataFrame(dfcluster_to_namedtuple(
+        cluster_list[0], data, verbose=verbose,
+        col_os=col_os,
+        col_dead=col_dead)) if df is None else df
+    if len(__df) == 0:
+        return ax
+
+    try:
+        kmf.fit(__df['os'], event_observed=__df['dead'], label=label)
+        label += '_' + str(kmf.median_)
+        kmf.fit(__df['os'], event_observed=__df['dead'], label=label)
+        if ax is not None:
+            kwargs['ax'] = ax
+        ax = kmf.plot(**kwargs)
+
+        for i, clust in enumerate(cluster_list[1:]):
+            assert False
+            __df = pd.DataFrame(dfcluster_to_namedtuple(
+                clust, data, col_os=col_os,
+                col_dead=col_dead))
+            kmf.fit(__df['os'], event_observed=__df['dead'])
+            ax = kmf.plot(ax=ax)
+    except Exception as e:
+        print("Error for", __df)
+    return ax, __df
+
+
+def kaplan(dataframe, col_condition, col_os='os', col_dead='dead', ax=None,
+           alpha=1e-14):
+    """Plot a kaplan meier."""
+    values = sorted(dataframe[col_condition].unique())
+    if ax is None:
+        _, ax = plt.subplots()
+
+    kmf = KaplanMeierFitter(alpha=alpha)
+    for label in values:
+        df_i = dataframe[dataframe[col_condition] == label]
+        kmf.fit(df_i[col_os], df_i[col_dead], label=label)
+        label += '_' + str(kmf.median_)
+        kmf.fit(df_i[col_os], df_i[col_dead], label=label)  # this is for labeling
+        kmf.plot(ax=ax, show_censors=True)
+
+    return ax
