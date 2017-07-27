@@ -4,6 +4,8 @@ import numpy as np
 from functools import partial
 from itertools import combinations
 from sklearn.base import BaseEstimator, TransformerMixin
+import pyximport; pyximport.install(pyimport=True, reload_support=True)
+import sk_fast
 
 try:
     import sys
@@ -79,7 +81,7 @@ def _stringkernel_unsymmetric(X, X_train_, kn=1, lamda=.5,
     x_len = len(X)
     y_len = len(X_train_)
     kernel = np.empty((x_len, y_len))
-    function = partial(_core_stringkernel, kn=kn, lamda=lamda,
+    function = partial(sk_fast._core_stringkernel, kn=kn, lamda=lamda,
                        hard_matching=hard_matching, aa_model=aa_model)
     # result_ = [function(x, y) for x in X for y in X_train_]
     result_ = jl.Parallel(n_jobs=n_jobs)(jl.delayed(function)(
@@ -114,7 +116,7 @@ def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
     iu1 = np.triu_indices(n_samples, 1)
     il1 = np.tril_indices(n_samples, -1)
 
-    function = partial(_core_stringkernel, kn=kn, lamda=lamda,
+    function = partial(sk_fast._core_stringkernel, kn=kn, lamda=lamda,
                        hard_matching=hard_matching, aa_model=aa_model)
     # result_ = [function(x, y) for x, y in combinations(X, 2)]
     result_ = jl.Parallel(n_jobs=n_jobs)(jl.delayed(function)(
