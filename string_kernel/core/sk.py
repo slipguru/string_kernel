@@ -219,15 +219,16 @@ def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
         kernel = np.zeros((x_len, y_len))
         norms = np.zeros(x_len if same_x else x_len + y_len)
         for kn in range(min_kn, max_kn + 1):
-            single_kernel = StringKernel(
-                kn=kn, lamda=lamda,
+            single_kernel = _worker_string_kernel(
+                X, X_train_, kn, lamda=lamda,
                 check_min_length=check_min_length,
-                hard_matching=hard_matching,
+                hard_matching=hard_matching, aa_model=aa_model,
                 normalize=normalize_before,
-                return_norms=return_norms, n_jobs=n_jobs_single).fit(X_train_)
-            kernel += single_kernel.transform(X)
+                return_norms=return_norms, n_jobs=n_jobs_single)
             if return_norms:
-                norms += single_kernel.norms_
+                single_kernel, single_norms = single_kernel
+                norms += single_norms
+            kernel += single_kernel
     else:
         kernel = jl.Parallel(n_jobs=n_jobs)(jl.delayed(_worker_string_kernel)(
             X=X, X_train=X_train_, kn=kn, lamda=lamda,
@@ -256,14 +257,6 @@ def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
             x_grid, y_grid = np.meshgrid(norms[x_len:], norms[:x_len])
             kernel /= np.sqrt(x_grid * y_grid)
 
-        # for i in range(n_samples):
-        #     for j in range(i + 1, n_samples):
-        #         kernel[i, j] /= np.sqrt(kernel[i, i] * kernel[j, j])
-        #         kernel[j, i] = kernel[i, j]
-
-    # if not same_x:
-    #     # top-right part
-    #     kernel = kernel[:len(X), len(X):]
     if verbose:
         print("SumStringKernel: kernel computed")
 
@@ -296,7 +289,6 @@ class SumStringKernel(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None, **fit_params):
         """Kernel is built as the sum of string kernels of different length."""
-        # Get values for normalization, it is computed for elements in diagonal
         self.X_train_ = X.ravel()
         return self
 
