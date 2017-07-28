@@ -139,7 +139,7 @@ def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
 
     if return_norms:
         if normalize:
-            norms = kernel.flat[::n_samples + 1]
+            norms = np.array(kernel.flat[::n_samples + 1])
         return kernel, norms
     return kernel
 
