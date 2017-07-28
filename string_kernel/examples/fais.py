@@ -114,11 +114,25 @@ def kaplan(dataframe, col_condition, col_os='os', col_dead='dead', ax=None,
         _, ax = plt.subplots()
 
     kmf = KaplanMeierFitter(alpha=alpha)
+    cond = dataframe[col_os].notnull() & dataframe[col_dead].notnull()
     for label in values:
-        df_i = dataframe[dataframe[col_condition] == label]
-        kmf.fit(df_i[col_os], df_i[col_dead], label=label)
+        cond_i = dataframe[col_condition] == label
+        df_i = dataframe[cond & cond_i]
+        T = df_i[col_os].astype(float)
+        E = df_i[col_dead].astype(float)
+        kmf.fit(T, E, label=label)
         label += '_' + str(kmf.median_)
-        kmf.fit(df_i[col_os], df_i[col_dead], label=label)  # this is for labeling
+        kmf.fit(T, E, label=label)  # this is for labeling
         kmf.plot(ax=ax, show_censors=True)
 
+    ax.set_ylabel("survival probability")
+    if len(values) == 2:
+        results = logrank_test(
+            dataframe[cond & (dataframe[col_condition] == values[0])][col_os],
+            dataframe[cond & (dataframe[col_condition] == values[1])][col_os],
+            dataframe[cond & (dataframe[col_condition] == values[0])][col_dead],
+            dataframe[cond & (dataframe[col_condition] == values[1])][col_dead],
+            alpha=.99)
+        ax.text(0.1, -0.05, "logrank_test: %.2e" % results.p_value,
+                fontsize='medium')
     return ax
