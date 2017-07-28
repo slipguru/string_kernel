@@ -43,7 +43,7 @@ def _core_stringkernel(x, y, kn, lamda, hard_matching, aa_model=None):
                 Kd[i % 2][j*y_dim+k] = lamda * Kd[i % 2][(j - 1) * y_dim + k] + Kdd
 
     # Calculate K
-    cdef double sum_ = 0
+    cdef float sum_ = 0
     for i in range(kn - 1, len_x):
         for j in range(kn - 1, len_y):
             # hard matching
