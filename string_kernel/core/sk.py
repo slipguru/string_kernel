@@ -1,3 +1,5 @@
+"""Interface for string kernel sklearn-like."""
+from __future__ import print_function
 import joblib as jl
 import numpy as np
 
