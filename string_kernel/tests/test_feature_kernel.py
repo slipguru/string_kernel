@@ -6,7 +6,7 @@ from string_kernel import feature_map
 from string_kernel.core import sk
 
 def test_feature_explicit_kernel_unnormed():
-    ll = ['caba', 'gaba']
+    ll = np.array(['caba', 'gaba'])
     df = feature_map.explicit_sk_dataframe(
         ll, min_kn=2, max_kn=2, lamda=.5, limit=99, normalize=False)
 
@@ -17,7 +17,7 @@ def test_feature_explicit_kernel_unnormed():
 
 
 def test_feature_explicit_kernel_normed():
-    ll = ['caba', 'gaba']
+    ll = np.array(['caba', 'gaba'])
     df = feature_map.explicit_sk_dataframe(
         ll, min_kn=2, max_kn=2, lamda=.5, limit=99, normalize=True)
 

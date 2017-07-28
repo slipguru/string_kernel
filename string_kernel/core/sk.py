@@ -116,7 +116,7 @@ def _stringkernel_symmetric(X, kn=1, lamda=.5, hard_matching=True,
     n_samples = len(X)
     kernel = np.empty((n_samples, n_samples))
     iu1 = np.triu_indices(n_samples, 1)
-    il1 = np.tril_indices(n_samples, -1)
+    il1 = iu1[::-1]
 
     function = partial(sk_fast._core_stringkernel, kn=kn, lamda=lamda,
                        hard_matching=hard_matching, aa_model=aa_model)
@@ -248,7 +248,7 @@ def sumstringkernel(X, X_train_, min_kn=1, max_kn=2, lamda=.5, n_jobs=-1,
     if normalize:
         if same_x:
             iu1 = np.triu_indices(x_len, 1)
-            il1 = np.tril_indices(x_len, -1)
+            il1 = iu1[::-1]
             diagonal = kernel.flat[::x_len + 1]
             kernel[iu1] /= [np.sqrt(diagonal[i] * diagonal[j]) for i, j in
                             combinations(range(x_len), 2)]
